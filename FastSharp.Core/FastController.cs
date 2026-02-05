@@ -13,12 +13,14 @@ namespace FastSharp.Controllers
         private Action<EndpointOptions>? _configPost;
         private Action<EndpointOptions>? _configPut;
         private Action<EndpointOptions>? _configDelete;
+        private Action<EndpointOptions>? _configAll;
 
         protected void ConfigureGetList(Action<EndpointOptions> configuration) => _configGetList = configuration;
         protected void ConfigureGetById(Action<EndpointOptions> configuration) => _configGetById = configuration;
         protected void ConfigurePost(Action<EndpointOptions> configuration) => _configPost = configuration;
         protected void ConfigurePut(Action<EndpointOptions> configuration) => _configPut = configuration;
         protected void ConfigureDelete(Action<EndpointOptions> configuration) => _configDelete = configuration;
+        protected void ConfigureAll(Action<EndpointOptions> configuration) => _configAll = configuration;
 
         public void Map(IEndpointRouteBuilder app)
         {
@@ -30,11 +32,18 @@ namespace FastSharp.Controllers
 
             MapEndpoints(app);
         }
-        
-        private void MapGetList(IEndpointRouteBuilder app)
+
+        private EndpointOptions BuildOptions(Action<EndpointOptions>? specific)
         {
             var opt = new EndpointOptions();
-            _configGetList?.Invoke(opt); //El usuario llena las opciones
+            _configAll?.Invoke(opt);     // común
+            specific?.Invoke(opt);       // específico
+            return opt;
+        }
+
+        private void MapGetList(IEndpointRouteBuilder app)
+        {
+            var opt = BuildOptions(_configGetList); //El usuario llena las opciones
 
             if (opt.Active)
             {
@@ -50,8 +59,7 @@ namespace FastSharp.Controllers
 
         private void MapGetById(IEndpointRouteBuilder app)
         {
-            var opt = new EndpointOptions();
-            _configGetById?.Invoke(opt);
+            var opt = BuildOptions(_configGetById);
 
             if (opt.Active)
             {
@@ -67,8 +75,7 @@ namespace FastSharp.Controllers
 
         private void MapPost(IEndpointRouteBuilder app)
         {
-            var opt = new EndpointOptions();
-            _configPost?.Invoke(opt);
+            var opt = BuildOptions(_configPost);
 
             if (opt.Active)
             {
@@ -86,8 +93,7 @@ namespace FastSharp.Controllers
 
         private void MapPut(IEndpointRouteBuilder app)
         {
-            var opt = new EndpointOptions();
-            _configPut?.Invoke(opt);
+            var opt = BuildOptions(_configPut);
 
             if (opt.Active)
             {
@@ -110,8 +116,7 @@ namespace FastSharp.Controllers
 
         private void MapDelete(IEndpointRouteBuilder app)
         {
-            var opt = new EndpointOptions();
-            _configDelete?.Invoke(opt);
+            var opt = BuildOptions(_configDelete);
 
             if (opt.Active)
             {
