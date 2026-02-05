@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Elementos de la solución/">
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Samples/">
+    <Project Path="Samples/Api/Api.csproj" />
+  </Folder>
+  <Project Path="FastSharp.Core/FastSharp.Controllers.csproj" />
+  <Project Path="FastSharp.Models/FastSharp.Models.csproj" />
+</Solution>
