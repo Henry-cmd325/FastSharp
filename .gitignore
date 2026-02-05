@@ -1,0 +1,66 @@
+# Build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+
+# Rider
+.idea/
+*.sln.iml
+
+# Logs
+*.log
+
+# Cache
+*.vspscc
+*_i.c
+*_p.c
+*.ilk
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# DotCover
+*.dotCover
+
+# Coverage
+coverage*/
+*.coverage
+*.coveragexml
+
+# Publish outputs
+artifacts/
+**/publish/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tooling
+*.psess
+*.vsp
+*.vspx
+
+# Terraform local state
+*.tfstate
+*.tfstate.backup
+.terraform/
