@@ -74,7 +74,7 @@ namespace FastSharp.Controllers
         {
             if (_controllerOptions.ConfigGetById.Active)
             {
-                var builder = app.MapGet($"/{{id}}", async ([FromRoute]TIdentity id, [FromServices]TDbContext context) =>
+                var builder = app.MapGet("/{id}", async ([FromRoute]TIdentity id, [FromServices]TDbContext context) =>
                 {
                     var entity = await context.Set<TModel>().FindAsync(id);
                     if (entity is null)
@@ -106,7 +106,7 @@ namespace FastSharp.Controllers
         {
             if (_controllerOptions.ConfigPut.Active)
             {
-                var builder = app.MapPut($"/{{id}}", async ([FromRoute]TIdentity id, [FromBody]TModel updatedEntity, [FromServices]TDbContext context) =>
+                var builder = app.MapPut("/{id}", async ([FromRoute]TIdentity id, [FromBody]TModel updatedEntity, [FromServices]TDbContext context) =>
                 {
                     var entity = await context.Set<TModel>().FindAsync(id);
                     if (entity is null)
@@ -125,7 +125,7 @@ namespace FastSharp.Controllers
         {
             if (_controllerOptions.ConfigDelete.Active)
             {
-                var builder = app.MapDelete($"/{{id}}", async ([FromRoute]TIdentity id, [FromServices]TDbContext context) =>
+                var builder = app.MapDelete("/{id}", async ([FromRoute]TIdentity id, [FromServices]TDbContext context) =>
                 {
                     var entity = await context.Set<TModel>().FindAsync(id);
                     if (entity is null)
