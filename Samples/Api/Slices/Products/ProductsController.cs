@@ -11,6 +11,12 @@ namespace Api.Slices.Products
     {
         public ProductsController()
         {
+            ConfigureGroup(opt =>
+            {
+                opt.WithTags("ProductosPrueba")
+                .WithDescription("Endpoints for managing products in the inventory");
+            });
+
             ConfigureCRUD(opt =>
             {
                 opt.DisableEndpoint(GenericEndpoint.GetList);

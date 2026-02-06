@@ -7,7 +7,7 @@ namespace Api.Slices.Products.Endpoints
     {
         public void Map(RouteGroupBuilder app)
         {
-            app.MapGet("/api/products/{id}/stock", async ([FromRoute] int id) =>
+            app.MapGet("/{id}/stock", async ([FromRoute] int id) =>
             {
                 Results.Ok($"Checking stock for product {id}");
             })

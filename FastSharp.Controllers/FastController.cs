@@ -11,7 +11,8 @@ namespace FastSharp.Controllers
     {
         private readonly string ControllerName;
         private readonly List<Type> _controllerEndpoints = [];
-        private ControllerOptions _controllerOptions = new();
+        private readonly CRUDOptions _controllerOptions = new();
+        private Action<RouteGroupBuilder>? _groupConfiguration;
 
         protected FastController()
         {
@@ -21,13 +22,15 @@ namespace FastSharp.Controllers
             {
                 ControllerName = ControllerName[..^"Controller".Length].ToLowerInvariant();
             }
-        }  
+        }
 
-        public void ConfigureCRUD(Action<ControllerOptions> configure) => configure(_controllerOptions);
-
+        protected void ConfigureGroup(Action<RouteGroupBuilder> configure) => _groupConfiguration = configure;
+        protected void ConfigureCRUD(Action<CRUDOptions> configure) => configure(_controllerOptions);
+        
         public void Map(IEndpointRouteBuilder app)
         {
             var group = app.MapGroup($"/api/{ControllerName}").WithTags(ControllerName);
+            _groupConfiguration?.Invoke(group);
 
             if (_controllerOptions.ConfigAll.Active)
             {

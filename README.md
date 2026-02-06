@@ -138,9 +138,13 @@ For a controller named `ProductsController`, FastSharp generates the following b
 
 ## Personalización / Customization
 
-**ES**: La personalización de los endpoints CRUD se realiza en el constructor de tu controlador a través del método `ConfigureCRUD`. Este método te da acceso a `ControllerOptions`, que te permite modificar o deshabilitar los endpoints genéricos.
+**ES**: La personalización de los endpoints CRUD se realiza en el constructor de tu controlador a través del método `ConfigureCRUD`. Este método te da acceso a `CRUDOptions`, que te permite modificar o deshabilitar los endpoints genéricos.
 
-**EN**: Customization of CRUD endpoints is done in your controller's constructor via the `ConfigureCRUD` method. This method gives you access to `ControllerOptions`, allowing you to modify or disable the generic endpoints.
+**EN**: Customization of CRUD endpoints is done in your controller's constructor via the `ConfigureCRUD` method. This method gives you access to `CRUDOptions`, allowing you to modify or disable the generic endpoints.
+
+**ES**: Para configurar el grupo base del controlador (aplicando opciones a todos los endpoints del grupo), usa `ConfigureGroup`. Esto te permite agregar metadata o políticas a nivel de grupo.
+
+**EN**: To configure the controller base group (applying options to all endpoints in the group), use `ConfigureGroup`. This lets you add metadata or policies at the group level.
 
 ```csharp
 using FastSharp.Controllers.Configuration;
@@ -149,6 +153,11 @@ public class ProductsController : FastController<YourDbContext, Product, int>
 {
     public ProductsController()
     {
+        ConfigureGroup(group =>
+        {
+            group.WithDescription("Endpoints for managing products in the inventory");
+        });
+
         ConfigureCRUD(options =>
         {
             // Example 1: Disable an endpoint

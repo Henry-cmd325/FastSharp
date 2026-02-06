@@ -1,6 +1,6 @@
 ﻿namespace FastSharp.Controllers.Configuration
 {
-    public class ControllerOptions
+    public class CRUDOptions
     {
         internal EndpointOptions ConfigGetList = new();
         internal EndpointOptions ConfigGetById = new();

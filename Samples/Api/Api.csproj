@@ -16,11 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\FastSharp.Core\FastSharp.Controllers.csproj" />
+    <Folder Include="Context\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Context\" />
+    <ProjectReference Include="..\..\FastSharp.Controllers\FastSharp.Controllers.csproj" />
   </ItemGroup>
 
 </Project>
