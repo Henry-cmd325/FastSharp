@@ -164,13 +164,14 @@ public class ProductsController : FastController<YourDbContext, Product, int>
                 endpoint.WithDescription("Deletes a product permanently.");
             });
         });
-
-        **ES**: Es importante destacar que el parámetro `endpoint` dentro de `options.ConfigureEndpoint` es un `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (o similar, dependiendo de la versión de .NET), lo que te permite acceder a todos los métodos de extensión proporcionados por Minimal APIs de ASP.NET Core para configurar el endpoint de manera granular (ej. `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`, etc.), ofreciendo una gran flexibilidad para cada endpoint generado.
-        **EN**: It's important to note that the `endpoint` parameter within `options.ConfigureEndpoint` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This grants you access to all extension methods provided by ASP.NET Core Minimal APIs for granular endpoint configuration (e.g., `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`, etc.), offering great flexibility for each generated endpoint.
     }
 }
 ```
 
+**ES**: Es importante destacar que el parámetro `endpoint` dentro de `options.ConfigureEndpoint` es un `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (o similar, dependiendo de la versión de .NET), lo que te permite acceder a todos los métodos de extensión proporcionados por Minimal APIs de ASP.NET Core para configurar el endpoint de manera granular (ej. `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`, etc.), ofreciendo una gran flexibilidad para cada endpoint generado.
+
+**EN**: It's important to note that the `endpoint` parameter within `options.ConfigureEndpoint` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This grants you access to all extension methods provided by ASP.NET Core Minimal APIs for granular endpoint configuration (e.g., `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`, etc.), offering great flexibility for each generated endpoint.
+ 
 ---
 
 ## Endpoints Personalizados / Custom Endpoints
