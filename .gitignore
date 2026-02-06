@@ -18,6 +18,10 @@ obj/
 # Logs
 *.log
 
+# App settings
+appsettings.json
+appsettings.*.json
+
 # Cache
 *.vspscc
 *_i.c

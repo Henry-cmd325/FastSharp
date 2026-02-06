@@ -2,6 +2,6 @@
 {
     public interface IFastEndpoint
     {
-        public void Map(IEndpointRouteBuilder app);
+        public void Map(RouteGroupBuilder app);
     }
 }

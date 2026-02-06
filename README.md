@@ -23,27 +23,29 @@
 **ES/EN (NuGet)**
 
 ```bash
-dotnet add package FastSharp.Endpoints
+dotnet add package FastSharp.Controllers
 dotnet add package FastSharp.Models
 ```
 
-> Nota / Note: Este repositorio contiene dos librerías: `FastSharp.Endpoints` (core) y `FastSharp.Models` (interfaces de modelos).
+> Nota / Note: Este repositorio contiene dos librerías: `FastSharp.Controllers` (core) y `FastSharp.Models` (interfaces de modelos).
 
 ---
 
 ## Requisitos / Requirements
 
 **ES**
-- .NET (según el `TargetFramework` del paquete)
+- .NET 10 (o superior, según el `TargetFramework` del paquete)
 - Entity Framework Core
-- Tu aplicación debe registrar un `DbContext` en DI
-- Tus modelos deben implementar `IModel<TId>`
+- Tu aplicación debe registrar un `DbContext` en el contenedor de dependencias.
+- Tus modelos deben implementar `IModel<TId>`.
+- Tus controladores deben heredar de `FastController<TDbContext, TModel, TId>`.
 
 **EN**
-- .NET (based on the package `TargetFramework`)
+- .NET 10 (or higher, based on the package `TargetFramework`)
 - Entity Framework Core
-- Your app must register a `DbContext` in DI
-- Your models must implement `IModel<TId>`
+- Your app must register a `DbContext` in the dependency container.
+- Your models must implement `IModel<TId>`.
+- Your controllers must inherit from `FastController<TDbContext, TModel, TId>`.
 
 ---
 
@@ -52,6 +54,7 @@ dotnet add package FastSharp.Models
 ### 1) Modelo / Model
 
 ```csharp
+// YourProject/Models/Product.cs
 using FastSharp.Models;
 
 public class Product : IModel<int>
@@ -61,32 +64,57 @@ public class Product : IModel<int>
 }
 ```
 
-### 2) Endpoint / Endpoint
+### 2) DbContext
 
 ```csharp
-using FastSharp.Endpoints;
+// YourProject/Data/YourDbContext.cs
+using Microsoft.EntityFrameworkCore;
+using YourProject.Models;
 
-public class ProductsController : FastController<Product, int> { }
+public class YourDbContext : DbContext
+{
+    public DbSet<Product> Products { get; set; }
+
+    public YourDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
+}
 ```
 
-### 3) Program.cs / Minimal API setup
+### 3) Controlador / Controller
 
 ```csharp
-using FastSharp.Endpoints;
+// YourProject/Slices/Products/ProductsController.cs
+using FastSharp.Controllers;
+using YourProject.Models;
+using YourProject.Data;
+
+public class ProductsController : FastController<YourDbContext, Product, int> 
+{
+    public ProductsController()
+    {
+        // Customization goes here
+    }
+}
+```
+
+### 4) Program.cs / Minimal API setup
+
+```csharp
+using FastSharp.Controllers;
+using Microsoft.EntityFrameworkCore;
+using YourProject.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ES: registra controllers FastSharp por reflexión
-// EN: registers FastSharp controllers via reflection
-builder.Services.AddFastSharpEndpoints();
+// 1. Register your DbContext
+builder.Services.AddDbContext<YourDbContext>(opt => 
+    opt.UseInMemoryDatabase("MyDatabase")); // Or your preferred provider
 
-// ES/EN: IMPORTANT - register your EF Core DbContext
-// builder.Services.AddDbContext<MyDbContext>(...);
+// 2. Register FastSharp controllers and endpoints
+builder.Services.AddFastSharpEndpoints();
 
 var app = builder.Build();
 
-// ES: mapea endpoints automáticamente
-// EN: maps endpoints automáticamente
+// 3. Map FastSharp controllers
 app.MapFastSharpEndpoints();
 
 app.Run();
@@ -96,102 +124,131 @@ app.Run();
 
 ## Endpoints generados / Generated endpoints
 
-Para un modelo `Product` / For `Product`:
+Para un controlador llamado `ProductsController`, FastSharp genera la siguiente ruta base: `/api/products`.
 
-- `GET    /api/products` → list all
-- `GET    /api/products/{id}` → get by id
-- `POST   /api/product` → create
-- `PUT    /api/product/{id}` → update
-- `DELETE /api/product/{id}` → delete
+For a controller named `ProductsController`, FastSharp generates the following base route: `/api/products`.
 
-**ES**
-- El nombre base sale de `typeof(TModel).Name.ToLower()`.
-- La ruta de listado pluraliza agregando `s`.
-
-**EN**
-- Base name comes from `typeof(TModel).Name.ToLower()`.
-- List route pluralizes by appending `s`.
+- `GET    /api/products` → Lista todos los productos / Lists all products.
+- `GET    /api/products/{id}` → Obtiene un producto por su ID / Gets a product by ID.
+- `POST   /api/products` → Crea un nuevo producto / Creates a new product.
+- `PUT    /api/products/{id}` → Actualiza un producto existente / Updates an existing product.
+- `DELETE /api/products/{id}` → Elimina un producto / Deletes a product.
 
 ---
 
 ## Personalización / Customization
 
-Puedes usar los métodos `ConfigureGetList/ConfigureGetById/ConfigurePost/ConfigurePut/ConfigureDelete` para ajustar rutas, OpenAPI metadata, autorizaciones, etc. Estos métodos reciben un `EndpointOptions` para configurar el endpoint.
+**ES**: La personalización de los endpoints CRUD se realiza en el constructor de tu controlador a través del método `ConfigureCRUD`. Este método te da acceso a `ControllerOptions`, que te permite modificar o deshabilitar los endpoints genéricos.
 
-You can use `ConfigureGetList/ConfigureGetById/ConfigurePost/ConfigurePut/ConfigureDelete` methods to tweak routes, OpenAPI metadata, auth, etc. These methods receive an `EndpointOptions` to configure the endpoint.
+**EN**: Customization of CRUD endpoints is done in your controller's constructor via the `ConfigureCRUD` method. This method gives you access to `ControllerOptions`, allowing you to modify or disable the generic endpoints.
 
 ```csharp
-public class ProductsController : FastController<Product, int>
+using FastSharp.Controllers.Configuration;
+
+public class ProductsController : FastController<YourDbContext, Product, int>
 {
     public ProductsController()
     {
-        ConfigureGetList(options =>
+        ConfigureCRUD(options =>
         {
-            options.Builder = builder => builder.WithSummary("List products");
+            // Example 1: Disable an endpoint
+            // ES: Desactiva el endpoint para listar todos los productos
+            // EN: Disables the endpoint for listing all products
+            options.DisableEndpoint(GenericEndpoint.GetList);
+
+            // Example 2: Add OpenAPI metadata to an endpoint
+            // ES: Añade una descripción al endpoint de eliminación
+            // EN: Adds a description to the delete endpoint
+            options.ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
+            {
+                endpoint.WithDescription("Deletes a product permanently.");
+            });
         });
-    }
-}
-```
 
-### Desactivar rutas generadas / Disable generated routes
-
-```csharp
-public class ProductsController : FastController<Product, int>
-{
-    public ProductsController()
-    {
-        // ES: desactiva DELETE si no quieres exponerlo
-        // EN: disable DELETE if you don't want to expose it
-        ConfigureDelete(opt => opt.Active = false);
+        **ES**: Es importante destacar que el parámetro `endpoint` dentro de `options.ConfigureEndpoint` es un `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (o similar, dependiendo de la versión de .NET), lo que te permite acceder a todos los métodos de extensión proporcionados por Minimal APIs de ASP.NET Core para configurar el endpoint de manera granular (ej. `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`, etc.), ofreciendo una gran flexibilidad para cada endpoint generado.
+        **EN**: It's important to note that the `endpoint` parameter within `options.ConfigureEndpoint` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This grants you access to all extension methods provided by ASP.NET Core Minimal APIs for granular endpoint configuration (e.g., `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`, etc.), offering great flexibility for each generated endpoint.
     }
 }
 ```
 
 ---
 
-### Endpoints independientes / Standalone endpoints
+## Endpoints Personalizados / Custom Endpoints
 
-Además de los controladores genéricos, puedes crear endpoints sueltos implementando `IFastEndpoint`, como en `Samples/Api/Endpoints/CheckProductStock.cs`:
+**ES**: Además de los endpoints CRUD, puedes crear tus propios endpoints implementando `IFastEndpoint`. Estos deben ser registrados en un controlador para ser mapeados. Los endpoints personalizados se anidan bajo la ruta del controlador.
+
+**EN**: Besides CRUD endpoints, you can create your own by implementing `IFastEndpoint`. These must be registered within a controller to be mapped. Custom endpoints are nested under the controller's route.
+
+### 1) Definir el Endpoint / Define the Endpoint
 
 ```csharp
+// YourProject/Slices/Products/Endpoints/CheckStock.cs
 using FastSharp.Controllers;
 using Microsoft.AspNetCore.Mvc;
 
-public class CheckProductStock : IFastEndpoint
+public class CheckStock : IFastEndpoint
 {
-    public void Map(IEndpointRouteBuilder app)
+    // ES: El RouteGroupBuilder se inyecta desde el controlador padre
+    // EN: The RouteGroupBuilder is injected from the parent controller
+    public void Map(RouteGroupBuilder group)
     {
-        app.MapGet("/api/products/{id}/stock", async ([FromRoute] int id) =>
+        group.MapGet("/{id}/stock", async ([FromRoute] int id) =>
         {
-            return Results.Ok($"Checking stock for product {id}");
+            // Your logic here...
+            return Results.Ok($"Product {id} has 10 units in stock.");
         })
-        .WithTags("prueba");
+        .WithTags("Stock");
     }
 }
 ```
 
-Estos endpoints se registran igual que los controladores FastSharp cuando llamas a `app.MapFastSharpEndpoints(...)`.
+### 2) Incluir en el Controlador / Include in Controller
+
+**ES**: Usa `Include<T>()` para un endpoint individual o `IncludeNamespace<T>()` para todos los endpoints en un namespace.
+
+**EN**: Use `Include<T>()` for a single endpoint or `IncludeNamespace<T>()` for all endpoints in a namespace.
+
+```csharp
+public class ProductsController : FastController<YourDbContext, Product, int> 
+{
+    public ProductsController()
+    {
+        // ES: Incluye todos los endpoints del mismo namespace que CheckStock
+        // EN: Includes all endpoints in the same namespace as CheckStock
+        IncludeNamespace<CheckStock>();
+        
+        // ES: O incluye un endpoint específico
+        // EN: Or include a specific endpoint
+        // Include<CheckStock>();
+    }
+}
+```
+
+Esto resultará en un nuevo endpoint: `GET /api/products/{id}/stock`.
+This will result in a new endpoint: `GET /api/products/{id}/stock`.
 
 ---
 
 ## Descubrimiento por ensamblados / Assembly scanning
 
-Si tus controladores están en otro ensamblado / If your controllers live in another assembly:
+**ES**: Si tus controladores están en un ensamblado diferente al de `Program.cs`, debes especificarlo.
+
+**EN**: If your controllers live in a different assembly than `Program.cs`, you must specify it.
 
 ```csharp
-builder.Services.AddFastSharpEndpoints(new[] { typeof(ProductsController).Assembly });
-app.MapFastSharpEndpoints(new[] { typeof(ProductsController).Assembly });
+var assemblies = new[] { typeof(ProductsController).Assembly };
+
+builder.Services.AddFastSharpEndpoints(assemblies);
+app.MapFastSharpEndpoints(assemblies);
 ```
 
 ---
 
 ## Roadmap
 
-- [x] `GET /api/{model}/{id}` (get by id)
-- [ ] Better pluralization strategy
-- [ ] Validate `id` (route) vs `Id` (body) on `PUT`
-- [ ] Paging/filtering (optional)
-- [ ] NuGet metadata + CI publish
+- [ ] Validar `id` de ruta vs `Id` del cuerpo en `PUT` / Validate route `id` vs body `Id` on `PUT`
+- [ ] Paginación y filtrado (opcional) / Paging and filtering (optional)
+- [ ] Metadatos NuGet y publicación CI/CD / NuGet metadata and CI/CD publish
 
 ---
 
