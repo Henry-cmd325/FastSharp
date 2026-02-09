@@ -7,24 +7,24 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Slices.Products
 {
-    public class ProductsController : FastController<ApiDbContext, Product, int> 
+    public class ProductsModule : Module<ApiDbContext>
     {
-        public ProductsController()
+        public ProductsModule()
         {
             ConfigureGroup(opt =>
-            {
-                opt.WithTags("ProductosPrueba")
-                .WithDescription("Endpoints for managing products in the inventory");
-            });
-
-            ConfigureCRUD(opt =>
+             {
+                 opt.WithTags("Productos")
+                 .WithDescription("Endpoints for managing products in the inventory");
+             });
+        
+            AddCRUD<Product, int>(opt =>
             {
                 opt.DisableEndpoint(GenericEndpoint.GetList);
 
                 opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) =>
                     endpoint.WithDescription("Deletes a product by its unique identifier")
                     .WithTags("Delete"));
-            });
+            }, "/products");
 
             IncludeNamespace<CheckProductStock>();
         }

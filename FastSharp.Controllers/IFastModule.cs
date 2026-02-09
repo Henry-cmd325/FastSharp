@@ -1,6 +1,6 @@
 ﻿namespace FastSharp.Controllers
 {
-    public interface IFastController
+    public interface IFastModule
     {
         public void Map(IEndpointRouteBuilder app);
     }

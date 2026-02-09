@@ -17,7 +17,7 @@ namespace FastSharp.Controllers
                 var typesToRegister = assembly.GetTypes()
                     .Where(t => !t.IsAbstract && !t.IsInterface &&
                                 (typeof(IFastEndpoint).IsAssignableFrom(t) ||
-                                 typeof(IFastController).IsAssignableFrom(t)));
+                                 typeof(IFastModule).IsAssignableFrom(t)));
 
                 foreach (var type in typesToRegister)
                     services.AddScoped(type);
@@ -39,11 +39,11 @@ namespace FastSharp.Controllers
                 var controllerTypes = assembly.GetTypes()
                     .Where(t => !t.IsAbstract &&
                                 !t.IsInterface &&
-                                typeof(IFastController).IsAssignableFrom(t));
+                                typeof(IFastModule).IsAssignableFrom(t));
 
                 foreach (var type in controllerTypes)
                 {
-                    var controller = (IFastController)ActivatorUtilities.CreateInstance(app.ServiceProvider, type);
+                    var controller = (IFastModule)ActivatorUtilities.CreateInstance(app.ServiceProvider, type);
 
                     controller.Map(app);
                 }
