@@ -3,6 +3,14 @@
     <File Path=".gitignore" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/Elementos de la solución/docs/">
+    <File Path="docs/architecture.md" />
+    <File Path="docs/assembly-scanning.md" />
+    <File Path="docs/basic-usage.md" />
+    <File Path="docs/custom-endpoints.md" />
+    <File Path="docs/customization.md" />
+    <File Path="docs/roadmap.md" />
+  </Folder>
   <Folder Name="/Samples/">
     <Project Path="Samples/Api/Api.csproj" />
   </Folder>

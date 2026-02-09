@@ -87,7 +87,6 @@ app.Run();
 
 ## Docs
 
-- [Docs index](docs/index.md)
 - [Arquitectura modular / Modular architecture](docs/architecture.md)
 - [Uso basico / Basic usage](docs/basic-usage.md)
 - [Personalizacion / Customization](docs/customization.md)

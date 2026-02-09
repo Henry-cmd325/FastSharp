@@ -2,8 +2,6 @@
 
 [Volver al README / Back to README](../README.md)
 
-[Ir al indice de docs / Go to docs index](index.md)
-
 ## Indice / Index
 
 - [Uso basico / Basic usage](basic-usage.md)
