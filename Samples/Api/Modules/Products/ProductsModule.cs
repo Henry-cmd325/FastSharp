@@ -1,11 +1,11 @@
 ﻿using Api.Context;
 using Api.Context.Models;
-using Api.Slices.Products.Endpoints;
-using FastSharp.Controllers;
-using FastSharp.Controllers.Configuration;
+using Api.Modules.Products.Endpoints;
+using FastSharp.Modules;
+using FastSharp.Modules.Configuration;
 using Microsoft.EntityFrameworkCore;
 
-namespace Api.Slices.Products
+namespace Api.Modules.Products
 {
     public class ProductsModule : Module<ApiDbContext>
     {
@@ -17,14 +17,16 @@ namespace Api.Slices.Products
                  .WithDescription("Endpoints for managing products in the inventory");
              });
         
-            AddCRUD<Product, int>(opt =>
+            AddCRUD<Product, int>("/products", opt =>
             {
                 opt.DisableEndpoint(GenericEndpoint.GetList);
 
                 opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) =>
                     endpoint.WithDescription("Deletes a product by its unique identifier")
                     .WithTags("Delete"));
-            }, "/products");
+            });
+
+            AddCRUD<Product, int>("/products/alternative");
 
             IncludeNamespace<CheckProductStock>();
         }

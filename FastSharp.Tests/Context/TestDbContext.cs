@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace FastSharp.Tests
+namespace FastSharp.Tests.Context
 {
     public sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
     {

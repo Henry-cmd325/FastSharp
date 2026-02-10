@@ -17,8 +17,8 @@
 **EN**: To configure the module base group (applying options to all endpoints in the group), use `ConfigureGroup`. This lets you add metadata or policies at the group level.
 
 ```csharp
-using FastSharp.Controllers;
-using FastSharp.Controllers.Configuration;
+using FastSharp.Modules;
+using FastSharp.Modules.Configuration;
 using YourProject.Models;
 using YourProject.Data;
 

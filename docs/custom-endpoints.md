@@ -16,7 +16,7 @@
 
 ```csharp
 // YourProject/Slices/Products/Endpoints/CheckStock.cs
-using FastSharp.Controllers;
+using FastSharp.Modules;
 using Microsoft.AspNetCore.Mvc;
 
 public class CheckStock : IFastEndpoint

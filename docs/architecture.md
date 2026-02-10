@@ -149,8 +149,20 @@ public class InventoryModule : Module<YourDbContext>
 
 ## Representación visual / Visual representation
 
-InventoryModule
- ├─ CRUD: Products
- ├─ CRUD: Categories
- ├─ Endpoint: CheckStock
- └─ Endpoint: AdjustInventory
+```mermaid
+graph TD
+    subgraph "Inventory Module"
+        D[Module Configuration] -->|Configures| G[Route Group '/inventory']
+        
+        G --> C1[CRUD: Products]
+        G --> C2[CRUD: Categories]
+        
+        subgraph "Custom Endpoints (Namespace Scan)"
+            E1[CheckStock Endpoint]
+            E2[AdjustInventory Endpoint]
+        end
+        
+        G --> E1
+        G --> E2
+    end
+```

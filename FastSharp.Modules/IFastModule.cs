@@ -1,4 +1,4 @@
-﻿namespace FastSharp.Controllers
+﻿namespace FastSharp.Modules
 {
     public interface IFastModule
     {

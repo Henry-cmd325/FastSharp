@@ -1,5 +1,5 @@
 using Api.Context;
-using FastSharp.Controllers;
+using FastSharp.Modules;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +17,12 @@ app.MapFastSharpEndpoints();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.UseSwaggerUI(opt =>
+    {
+        opt.OAuthAppName("FastSharp API - Swagger UI");
+        opt.SwaggerEndpoint("/openapi/v1.json", "FastSharp API V1");
+    });
 }
 
 app.UseHttpsRedirection();

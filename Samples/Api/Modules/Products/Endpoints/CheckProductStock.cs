@@ -1,15 +1,15 @@
-﻿using FastSharp.Controllers;
+﻿using FastSharp.Modules;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Api.Slices.Products.Endpoints
+namespace Api.Modules.Products.Endpoints
 {
-    public class CheckProductStock : IFastEndpoint
+    public class CheckProductStock : IEndpoint
     {
         public void Map(RouteGroupBuilder app)
         {
             app.MapGet("/{id}/stock", async ([FromRoute] int id) =>
             {
-                Results.Ok($"Checking stock for product {id}");
+                return Results.Ok($"Checking stock for product {id}");
             })
             .WithTags("prueba");
         }

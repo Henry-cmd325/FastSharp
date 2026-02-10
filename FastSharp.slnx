@@ -14,7 +14,7 @@
   <Folder Name="/Samples/">
     <Project Path="Samples/Api/Api.csproj" />
   </Folder>
-  <Project Path="FastSharp.Controllers/FastSharp.Controllers.csproj" />
   <Project Path="FastSharp.Models/FastSharp.Models.csproj" />
+  <Project Path="FastSharp.Modules/FastSharp.Modules.csproj" />
   <Project Path="FastSharp.Tests/FastSharp.Tests.csproj" />
 </Solution>

@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FastSharp.Controllers\FastSharp.Controllers.csproj" />
     <ProjectReference Include="..\FastSharp.Models\FastSharp.Models.csproj" />
+    <ProjectReference Include="..\FastSharp.Modules\FastSharp.Modules.csproj" />
   </ItemGroup>
 
 </Project>

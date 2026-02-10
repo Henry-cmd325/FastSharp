@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace FastSharp.Controllers
+namespace FastSharp.Modules
 {
     public static class DependencyInjection
     {
@@ -16,7 +16,7 @@ namespace FastSharp.Controllers
             {
                 var typesToRegister = assembly.GetTypes()
                     .Where(t => !t.IsAbstract && !t.IsInterface &&
-                                (typeof(IFastEndpoint).IsAssignableFrom(t) ||
+                                (typeof(IEndpoint).IsAssignableFrom(t) ||
                                  typeof(IFastModule).IsAssignableFrom(t)));
 
                 foreach (var type in typesToRegister)
@@ -36,16 +36,16 @@ namespace FastSharp.Controllers
             foreach (var assembly in assemblies)
             {
                 // Buscamos solo los controladores principales para arrancar el mapeo
-                var controllerTypes = assembly.GetTypes()
+                var moduleTypes = assembly.GetTypes()
                     .Where(t => !t.IsAbstract &&
                                 !t.IsInterface &&
                                 typeof(IFastModule).IsAssignableFrom(t));
 
-                foreach (var type in controllerTypes)
+                foreach (var type in moduleTypes)
                 {
-                    var controller = (IFastModule)ActivatorUtilities.CreateInstance(app.ServiceProvider, type);
+                    var module = (IFastModule)ActivatorUtilities.CreateInstance(app.ServiceProvider, type);
 
-                    controller.Map(app);
+                    module.Map(app);
                 }
             }
         }

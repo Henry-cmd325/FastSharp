@@ -1,4 +1,4 @@
-# FastSharp
+﻿# FastSharp
 
 **ES**: FastSharp es una libreria ligera para crear MVPs y APIs en C# y ASP.NET Core (Minimal APIs) con CRUDs y endpoints personalizados basados en convenciones.
 
@@ -6,14 +6,24 @@
 
 ---
 
+## Características / Features
+
+- 🚀 **Zero Boilerplate**: CRUDs completos en una sola línea de código.
+- 🏗 **Modular Architecture**: Organiza tu código por dominios, no por capas técnicas.
+- 🔍 **Auto-Discovery**: Escaneo automático de endpoints por Namespace.
+- 📄 **OpenAPI Ready**: Integración nativa con Swagger y metadatos de endpoints.
+- ⚡ **High Performance**: Construido sobre Minimal APIs y Entity Framework Core.
+
+---
+
 ## Instalacion / Installation
 
 ```bash
-dotnet add package FastSharp.Controllers
+dotnet add package FastSharp.Modules
 dotnet add package FastSharp.Models
 ```
 
-> Nota / Note: Este repositorio contiene dos librerias: `FastSharp.Controllers` (core) y `FastSharp.Models` (interfaces de modelos).
+> Nota / Note: Este repositorio contiene dos librerias: `FastSharp.Modules` (core) y `FastSharp.Models` (interfaces de modelos).
 
 ---
 
@@ -39,29 +49,36 @@ dotnet add package FastSharp.Models
 
 ```csharp
 // YourProject/Slices/Products/ProductsModule.cs
-using FastSharp.Controllers;
-using FastSharp.Controllers.Configuration;
+using FastSharp.Modules;
+using FastSharp.Modules.Configuration;
 using YourProject.Data;
 using YourProject.Models;
 
-public class ProductsModule : Module<YourDbContext>
+public class ProductsModule : Module<ApiDbContext>
 {
     public ProductsModule()
     {
         ConfigureGroup(opt =>
+            {
+                opt.WithTags("Productos")
+                .WithDescription("Endpoints for managing products in the inventory");
+            });
+        
+        AddCRUD<Product, int>(opt =>
         {
-            opt.WithTags("Products")
-               .WithDescription("Endpoints for managing products");
-        });
+            opt.DisableEndpoint(GenericEndpoint.GetList);
 
-        AddCRUD<Product, int>(opt => { }, "/products");
+            opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) => endpoint.WithTags("Delete"));
+        }, "/products");
+
+        IncludeNamespace<CheckProductStock>();
     }
 }
 ```
 
 ```csharp
 // Program.cs
-using FastSharp.Controllers;
+using FastSharp.Modules;
 using Microsoft.EntityFrameworkCore;
 using YourProject.Data;
 

@@ -1,5 +1,6 @@
-using FastSharp.Controllers;
-using FastSharp.Tests.Controllers;
+using FastSharp.Modules;
+using FastSharp.Tests.Context;
+using FastSharp.Tests.Modules;
 using FastSharp.Tests.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -22,23 +23,23 @@ namespace FastSharp.Tests
             builder.Services.AddSingleton(databaseRoot);
             builder.Services.AddDbContext<TestDbContext>(options =>
                 options.UseInMemoryDatabase("FastSharpTests", databaseRoot));
-            builder.Services.AddFastSharpEndpoints(typeof(SampleController).Assembly);
+            builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
 
             var app = builder.Build();
-            app.MapFastSharpEndpoints(typeof(SampleController).Assembly);
+            app.MapFastSharpEndpoints(typeof(SampleModule).Assembly);
             await app.StartAsync();
             return app;
         }
 
         [Fact]
-        public void AddFastSharpEndpoints_RegistersControllersAndEndpoints()
+        public void AddFastSharpEndpoints_RegistersModulesAndEndpoints()
         {
             var services = new ServiceCollection();
-            services.AddFastSharpEndpoints(typeof(SampleController).Assembly);
+            services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
             var provider = services.BuildServiceProvider();
 
             using var scope = provider.CreateScope();
-            Assert.NotNull(scope.ServiceProvider.GetService(typeof(SampleController)));
+            Assert.NotNull(scope.ServiceProvider.GetService(typeof(SampleModule)));
             Assert.NotNull(scope.ServiceProvider.GetService(typeof(PingEndpoint)));
         }
 

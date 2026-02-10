@@ -1,4 +1,4 @@
-﻿namespace FastSharp.Controllers.Configuration
+﻿namespace FastSharp.Modules.Configuration
 {
     public class EndpointOptions
     {

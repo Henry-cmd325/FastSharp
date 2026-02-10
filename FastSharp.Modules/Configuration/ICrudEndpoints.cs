@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace FastSharp.Controllers.Configuration
+namespace FastSharp.Modules.Configuration
 {
     public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     {

@@ -40,8 +40,8 @@ public class YourDbContext : DbContext
 
 ```csharp
 // YourProject/Slices/Products/ProductsModule.cs
-using FastSharp.Controllers;
-using FastSharp.Controllers.Configuration;
+using FastSharp.Modules;
+using FastSharp.Modules.Configuration;
 using YourProject.Models;
 using YourProject.Data;
 
@@ -71,7 +71,7 @@ public class ProductsModule : Module<YourDbContext>
 ## 4) Program.cs / Minimal API setup
 
 ```csharp
-using FastSharp.Controllers;
+using FastSharp.Modules;
 using Microsoft.EntityFrameworkCore;
 using YourProject.Data;
 

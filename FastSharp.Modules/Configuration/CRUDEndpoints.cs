@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace FastSharp.Controllers.Configuration
+namespace FastSharp.Modules.Configuration
 {
     public class CRUDEndpoints<TDbContext, TEntity, TKey>(string routePrefix = "") : ICrudEndpoints<TDbContext>
         where TEntity : class, IModel<TKey>
