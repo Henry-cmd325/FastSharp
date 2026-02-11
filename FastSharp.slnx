@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/Elementos de la solución/">
     <File Path=".gitignore" />
+    <File Path="Gemini_Generated_Image_52oeva52oeva52oe.png" />
+    <File Path="LICENSE" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Elementos de la solución/docs/">

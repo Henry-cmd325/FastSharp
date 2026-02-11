@@ -1,5 +1,10 @@
 ﻿# FastSharp
 
+[![NuGet](https://img.shields.io/nuget/v/FastSharp.Modules?logo=nuget&style=for-the-badge)](https://www.nuget.org/packages/FastSharp.Modules)
+[![NuGet](https://img.shields.io/nuget/v/FastSharp.Models?logo=nuget&style=for-the-badge)](https://www.nuget.org/packages/FastSharp.Models)
+![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&style=for-the-badge)
+[![Stars](https://img.shields.io/github/stars/Henry-cmd325/FastSharp?logo=github&style=for-the-badge)](https://github.com/Henry-cmd325/FastSharp)
+
 **ES**: FastSharp es una librería ligera para crear MVPs y APIs en C# y ASP.NET Core (Minimal APIs) con CRUDs y endpoints personalizados basados en convenciones.
 
 **EN**: FastSharp is a lightweight library for building MVPs and APIs in C# and ASP.NET Core (Minimal APIs) with convention-based CRUDs and custom endpoints.

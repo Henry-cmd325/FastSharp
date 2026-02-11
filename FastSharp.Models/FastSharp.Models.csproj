@@ -4,6 +4,31 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>FastSharp.Models</Title>
+    <Description>FastSharp: Convention-over-configuration CRUDs and modular endpoints for .NET Minimal APIs. Build faster, keep it clean.</Description>
+    <PackageIcon>Gemini_Generated_Image_52oeva52oeva52oe.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Henry-cmd325/FastSharp</RepositoryUrl>
+	<Version>1.0.0-alpha.1</Version>
+	<Authors>Henry-cmd365</Authors>
+	<IsPackable>True</IsPackable>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
+	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\Gemini_Generated_Image_52oeva52oeva52oe.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
