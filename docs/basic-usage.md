@@ -1,11 +1,11 @@
-# Uso basico / Basic usage
+# Uso básico / Basic usage
 
 [Volver al README / Back to README](../README.md)
 
-## Indice / Index
+## Índice / Index
 
 - [Arquitectura modular / Modular architecture](architecture.md)
-- [Personalizacion / Customization](customization.md)
+- [Personalización / Customization](customization.md)
 - [Endpoints personalizados / Custom endpoints](custom-endpoints.md)
 
 ## 1) Modelo / Model
@@ -36,7 +36,7 @@ public class YourDbContext : DbContext
 }
 ```
 
-## 3) Modulo / Module
+## 3) Módulo / Module
 
 ```csharp
 // YourProject/Slices/Products/ProductsModule.cs
@@ -49,13 +49,14 @@ public class ProductsModule : Module<YourDbContext>
 {
     public ProductsModule()
     {
+        // Configure the endpoint group for this module (also applies to CRUDs) this method is optional but allows you to set metadata or policies at the group level.
         ConfigureGroup(opt =>
         {
             opt.WithTags("Products")
                .WithDescription("Endpoints for managing products in the inventory");
         });
 
-        AddCRUD<Product, int>(opt =>
+        AddCRUD<Product, int>("/products", opt =>
         {
             // Example: Disable an endpoint
             opt.DisableEndpoint(GenericEndpoint.GetList);
@@ -63,7 +64,7 @@ public class ProductsModule : Module<YourDbContext>
             // Example: Configure a specific endpoint
             opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) =>
                 endpoint.WithDescription("Deletes a product by its unique identifier"));
-        }, "/products");
+        });
     }
 }
 ```
@@ -102,9 +103,9 @@ app.Run();
 
 ## Endpoints generados / Generated endpoints
 
-Para un modulo llamado `ProductsModule` configurado con `AddCRUD<Product, int>(..., "/products")`, FastSharp genera la siguiente ruta base: `/api/products`.
+Para un módulo llamado `ProductsModule` configurado con `AddCRUD<Product, int>("/products", ...)`, FastSharp genera la siguiente ruta base: `/api/products`.
 
-For a module named `ProductsModule` configured with `AddCRUD<Product, int>(..., "/products")`, FastSharp generates the following base route: `/api/products`.
+For a module named `ProductsModule` configured with `AddCRUD<Product, int>("/products", ...)`, FastSharp generates the following base route: `/api/products`.
 
 - `GET    /api/products` -> Lista todos los productos / Lists all products.
 - `GET    /api/products/{id}` -> Obtiene un producto por su ID / Gets a product by ID.

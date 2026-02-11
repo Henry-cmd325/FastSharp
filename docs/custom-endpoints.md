@@ -2,13 +2,13 @@
 
 [Volver al README / Back to README](../README.md)
 
-## Indice / Index
+## Índice / Index
 
 - [Arquitectura modular / Modular architecture](architecture.md)
-- [Uso basico / Basic usage](basic-usage.md)
-- [Personalizacion / Customization](customization.md)
+- [Uso básico / Basic usage](basic-usage.md)
+- [Personalización / Customization](customization.md)
 
-**ES**: Ademas de los endpoints CRUD, puedes crear tus propios endpoints implementando `IFastEndpoint`. Estos deben ser registrados en un modulo para ser mapeados. Los endpoints personalizados se anidan bajo la ruta del modulo.
+**ES**: Además de los endpoints CRUD, puedes crear tus propios endpoints implementando `IFastEndpoint`. Estos deben ser registrados en un módulo para ser mapeados. Los endpoints personalizados se anidan bajo la ruta del módulo.
 
 **EN**: Besides CRUD endpoints, you can create your own by implementing `IFastEndpoint`. These must be registered within a module to be mapped. Custom endpoints are nested under the module's route.
 
@@ -32,7 +32,7 @@ public class CheckStock : IFastEndpoint
 }
 ```
 
-## 2) Incluir en el modulo / Include in module
+## 2) Incluir en el módulo / Include in module
 
 **ES**: Usa `Include<T>()` para un endpoint individual o `IncludeNamespace<T>()` para todos los endpoints en un namespace.
 
@@ -52,5 +52,5 @@ public class ProductsModule : Module<YourDbContext>
 }
 ```
 
-Esto resultara en un nuevo endpoint: `GET /api/products/{id}/stock`.
+Esto resultará en un nuevo endpoint: `GET /api/products/{id}/stock`.
 This will result in a new endpoint: `GET /api/products/{id}/stock`.

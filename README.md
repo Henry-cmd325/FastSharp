@@ -1,6 +1,6 @@
 ﻿# FastSharp
 
-**ES**: FastSharp es una libreria ligera para crear MVPs y APIs en C# y ASP.NET Core (Minimal APIs) con CRUDs y endpoints personalizados basados en convenciones.
+**ES**: FastSharp es una librería ligera para crear MVPs y APIs en C# y ASP.NET Core (Minimal APIs) con CRUDs y endpoints personalizados basados en convenciones.
 
 **EN**: FastSharp is a lightweight library for building MVPs and APIs in C# and ASP.NET Core (Minimal APIs) with convention-based CRUDs and custom endpoints.
 
@@ -8,33 +8,33 @@
 
 ## Características / Features
 
-- 🚀 **Zero Boilerplate**: CRUDs completos en una sola línea de código.
-- 🏗 **Modular Architecture**: Organiza tu código por dominios, no por capas técnicas.
-- 🔍 **Auto-Discovery**: Escaneo automático de endpoints por Namespace.
-- 📄 **OpenAPI Ready**: Integración nativa con Swagger y metadatos de endpoints.
-- ⚡ **High Performance**: Construido sobre Minimal APIs y Entity Framework Core.
+- 🚀 **Zero Boilerplate**: CRUDs completos en una sola línea de código. / Full CRUDs in a single line of code.
+- 🏗 **Modular Architecture**: Organiza tu código por dominios, no por capas técnicas. / Organize your code by domains, not by technical layers.
+- 🔍 **Auto-Discovery**: Escaneo automático de endpoints por Namespace. / Automatic endpoint scanning by namespace.
+- 📄 **OpenAPI Ready**: Integración nativa con Swagger y metadatos de endpoints. / Native integration with Swagger and endpoint metadata.
+- ⚡ **High Performance**: Construido sobre Minimal APIs y Entity Framework Core. / Built on Minimal APIs and Entity Framework Core.
 
 ---
 
-## Instalacion / Installation
+## Instalación / Installation
 
 ```bash
 dotnet add package FastSharp.Modules
 dotnet add package FastSharp.Models
 ```
 
-> Nota / Note: Este repositorio contiene dos librerias: `FastSharp.Modules` (core) y `FastSharp.Models` (interfaces de modelos).
+> Nota / Note: Este repositorio contiene dos librerías: `FastSharp.Modules` (core) y `FastSharp.Models` (interfaces de modelos).
 
 ---
 
 ## Requisitos / Requirements
 
 **ES**
-- .NET 10 (o superior, segun el `TargetFramework` del paquete)
+- .NET 10 (o superior, según el `TargetFramework` del paquete)
 - Entity Framework Core
-- Tu aplicacion debe registrar un `DbContext` en el contenedor de dependencias.
+- Tu aplicación debe registrar un `DbContext` en el contenedor de dependencias.
 - Tus modelos deben implementar `IModel<TId>`.
-- Tus modulos deben heredar de `Module<TDbContext>`.
+- Tus módulos deben heredar de `Module<TDbContext>`.
 
 **EN**
 - .NET 10 (or higher, based on the package `TargetFramework`)
@@ -45,7 +45,7 @@ dotnet add package FastSharp.Models
 
 ---
 
-## Quick start / Inicio rapido
+## Quick start / Inicio rápido
 
 ```csharp
 // YourProject/Slices/Products/ProductsModule.cs
@@ -58,18 +58,19 @@ public class ProductsModule : Module<ApiDbContext>
 {
     public ProductsModule()
     {
+        // Configure the endpoint group for this module (also applies to CRUDs) this method is optional but allows you to set metadata or policies at the group level.
         ConfigureGroup(opt =>
             {
                 opt.WithTags("Productos")
                 .WithDescription("Endpoints for managing products in the inventory");
             });
         
-        AddCRUD<Product, int>(opt =>
+        AddCRUD<Product, int>("/products", opt =>
         {
             opt.DisableEndpoint(GenericEndpoint.GetList);
 
             opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) => endpoint.WithTags("Delete"));
-        }, "/products");
+        });
 
         IncludeNamespace<CheckProductStock>();
     }
@@ -85,10 +86,15 @@ using YourProject.Data;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<YourDbContext>(opt =>
     opt.UseInMemoryDatabase("MyDatabase"));
+
+// Add FastSharp to the dependency container
 builder.Services.AddFastSharpEndpoints();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Map FastSharp endpoints
 app.MapFastSharpEndpoints();
 
 if (app.Environment.IsDevelopment())
@@ -105,8 +111,8 @@ app.Run();
 ## Docs
 
 - [Arquitectura modular / Modular architecture](docs/architecture.md)
-- [Uso basico / Basic usage](docs/basic-usage.md)
-- [Personalizacion / Customization](docs/customization.md)
+- [Uso básico / Basic usage](docs/basic-usage.md)
+- [Personalización / Customization](docs/customization.md)
 - [Endpoints personalizados / Custom endpoints](docs/custom-endpoints.md)
 - [Descubrimiento por ensamblados / Assembly scanning](docs/assembly-scanning.md)
 - [Roadmap](docs/roadmap.md)

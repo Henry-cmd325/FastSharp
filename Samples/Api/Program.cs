@@ -20,7 +20,6 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwaggerUI(opt =>
     {
-        opt.OAuthAppName("FastSharp API - Swagger UI");
         opt.SwaggerEndpoint("/openapi/v1.json", "FastSharp API V1");
     });
 }

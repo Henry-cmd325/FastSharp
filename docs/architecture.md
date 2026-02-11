@@ -138,8 +138,8 @@ public class InventoryModule : Module<YourDbContext>
         });
 
         // CRUDs for multiple entities
-        AddCRUD<Product, int>(opt => { }, "/products");
-        AddCRUD<Category, int>(opt => { }, "/categories");
+        AddCRUD<Product, int>("/products");
+        AddCRUD<Category, int>("/categories");
 
         // Custom endpoints under the same module
         IncludeNamespace<CheckStock>();
