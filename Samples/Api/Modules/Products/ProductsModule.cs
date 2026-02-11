@@ -19,11 +19,10 @@ namespace Api.Modules.Products
         
             AddCRUD<Product, int>("/products", opt =>
             {
-                opt.DisableEndpoint(GenericEndpoint.GetList);
-
-                opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) =>
-                    endpoint.WithDescription("Deletes a product by its unique identifier")
-                    .WithTags("Delete"));
+                opt.DisableEndpoint(GenericEndpoint.GetList)
+                    .ConfigureEndpoint(GenericEndpoint.GetById, (endpoint) =>
+                        endpoint.WithDescription("Retrieves a product by its unique identifier").WithTags("Get")
+                    );
             });
 
             AddCRUD<Product, int>("/products/alternative");

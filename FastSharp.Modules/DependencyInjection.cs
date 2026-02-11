@@ -20,7 +20,7 @@ namespace FastSharp.Modules
                                  typeof(IFastModule).IsAssignableFrom(t)));
 
                 foreach (var type in typesToRegister)
-                    services.AddScoped(type);
+                    services.AddTransient(type);
             }
 
             return services;
@@ -43,7 +43,7 @@ namespace FastSharp.Modules
 
                 foreach (var type in moduleTypes)
                 {
-                    var module = (IFastModule)ActivatorUtilities.CreateInstance(app.ServiceProvider, type);
+                    var module = (IFastModule)app.ServiceProvider.GetRequiredService(type);
 
                     module.Map(app);
                 }

@@ -7,12 +7,12 @@ namespace FastSharp.Modules.Configuration
         Type EntityType { get; }
         Type KeyType { get; }
 
-        public void DisableEndpoint(GenericEndpoint endpointName);
+        public ICrudEndpoints<TDbContext> DisableEndpoint(GenericEndpoint endpointName);
 
-        public void ConfigureEndpoint(GenericEndpoint endpointName, Action<RouteHandlerBuilder> configure);
+        public ICrudEndpoints<TDbContext> ConfigureEndpoint(GenericEndpoint endpointName, Action<RouteHandlerBuilder> configure);
 
-        public void ConfigureGroup(Action<RouteGroupBuilder> configure);
+        public ICrudEndpoints<TDbContext> ConfigureGroup(Action<RouteGroupBuilder> configure);
 
-        public void Map(RouteGroupBuilder group);
+        internal void Map(RouteGroupBuilder group);
     }
 }

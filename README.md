@@ -67,9 +67,9 @@ public class ProductsModule : Module<ApiDbContext>
         
         AddCRUD<Product, int>("/products", opt =>
         {
-            opt.DisableEndpoint(GenericEndpoint.GetList);
-
-            opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) => endpoint.WithTags("Delete"));
+            opt.DisableEndpoint(GenericEndpoint.GetList)
+               .ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
+                   endpoint.WithTags("Delete"));
         });
 
         IncludeNamespace<CheckProductStock>();
@@ -113,7 +113,6 @@ app.Run();
 - [Arquitectura modular / Modular architecture](docs/architecture.md)
 - [Uso básico / Basic usage](docs/basic-usage.md)
 - [Personalización / Customization](docs/customization.md)
-- [Endpoints personalizados / Custom endpoints](docs/custom-endpoints.md)
 - [Descubrimiento por ensamblados / Assembly scanning](docs/assembly-scanning.md)
 - [Roadmap](docs/roadmap.md)
 

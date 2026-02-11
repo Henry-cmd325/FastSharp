@@ -33,13 +33,12 @@ public class ProductsModule : Module<YourDbContext>
         AddCRUD<Product, int>("/products", options =>
         {
             // Example 1: Disable an endpoint
-            options.DisableEndpoint(GenericEndpoint.GetList);
-
-            // Example 2: Add OpenAPI metadata to an endpoint
-            options.ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
-            {
-                endpoint.WithDescription("Deletes a product permanently.");
-            });
+            options.DisableEndpoint(GenericEndpoint.GetList)
+                   // Example 2: Add OpenAPI metadata to an endpoint
+                   .ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
+                   {
+                       endpoint.WithDescription("Deletes a product permanently.");
+                   });
         });
     }
 }

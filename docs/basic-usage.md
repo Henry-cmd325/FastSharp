@@ -6,7 +6,6 @@
 
 - [Arquitectura modular / Modular architecture](architecture.md)
 - [Personalización / Customization](customization.md)
-- [Endpoints personalizados / Custom endpoints](custom-endpoints.md)
 
 ## 1) Modelo / Model
 
@@ -59,11 +58,10 @@ public class ProductsModule : Module<YourDbContext>
         AddCRUD<Product, int>("/products", opt =>
         {
             // Example: Disable an endpoint
-            opt.DisableEndpoint(GenericEndpoint.GetList);
-
-            // Example: Configure a specific endpoint
-            opt.ConfigureEndpoint(GenericEndpoint.Delete, (endpoint) =>
-                endpoint.WithDescription("Deletes a product by its unique identifier"));
+            opt.DisableEndpoint(GenericEndpoint.GetList)
+               // Example: Configure a specific endpoint
+               .ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
+                   endpoint.WithDescription("Deletes a product by its unique identifier"));
         });
     }
 }
