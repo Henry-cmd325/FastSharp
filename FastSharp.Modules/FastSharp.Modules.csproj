@@ -8,7 +8,7 @@
 	<Title>FastSharp.Modules</Title>
 	<Description>FastSharp: Convention-over-configuration CRUDs and modular endpoints for .NET Minimal APIs. Build faster, keep it clean.</Description>
 	<RepositoryUrl>https://github.com/Henry-cmd325/FastSharp</RepositoryUrl>
-	<Version>1.0.0-alpha.1</Version>
+	<Version>1.0.0-alpha.3</Version>
 	<Authors>Henry-cmd365</Authors>
 	<IsPackable>True</IsPackable>
 	<PackageIcon>Gemini_Generated_Image_52oeva52oeva52oe.png</PackageIcon>
@@ -33,9 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FastSharp.Models" Version="1.0.0-alpha.1" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.*" />
+    <PackageReference Include="FastSharp.Models" Version="[1.0.0-alpha.1,)" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="[10.0.0,11.0.0)" />
   </ItemGroup>
 
 </Project>

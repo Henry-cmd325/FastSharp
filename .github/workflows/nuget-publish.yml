@@ -24,10 +24,16 @@ jobs:
       - name: Build
         run: dotnet build -c Release --no-restore
 
+      - name: Test
+        run: dotnet test -c Release --no-build --verbosity normal
+
       - name: Pack
         run: |
-          dotnet pack FastSharp.Models/FastSharp.Models.csproj -c Release -o ./artifacts --no-build
-          dotnet pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o ./artifacts --no-build
+          # Extraemos el número de versión (quitando la 'v')
+          VERSION=${GITHUB_REF_NAME#v}
+
+          dotnet pack FastSharp.Models/FastSharp.Models.csproj -c Release -o ./artifacts --no-build /p:PackageVersion=$VERSION
+          dotnet pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o ./artifacts --no-build /p:PackageVersion=$VERSION
 
       - name: Publish to NuGet
         run: dotnet nuget push "./artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
