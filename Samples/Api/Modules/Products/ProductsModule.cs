@@ -11,13 +11,13 @@ namespace Api.Modules.Products
     {
         public ProductsModule()
         {
-            ConfigureGroup(opt =>
+            ConfigureGroup("api/products", opt =>
              {
                  opt.WithTags("Productos")
                  .WithDescription("Endpoints for managing products in the inventory");
              });
         
-            AddCRUD<Product, int>("/products", opt =>
+            AddCRUD<Product, int>("products", opt =>
             {
                 opt.DisableEndpoint(GenericEndpoint.GetList)
                     .ConfigureEndpoint(GenericEndpoint.GetById, (endpoint) =>
@@ -25,7 +25,7 @@ namespace Api.Modules.Products
                     );
             });
 
-            AddCRUD<Product, int>("/products/alternative");
+            AddCRUD<Product, int>("products/alternative");
 
             IncludeNamespace<CheckProductStock>();
         }

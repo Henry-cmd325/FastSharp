@@ -9,10 +9,10 @@ namespace FastSharp.Modules
         private readonly List<Type> _moduleEndpoints = [];
         private readonly List<ICrudEndpoints<TDbContext>> _crudOptionsList = [];
         private Action<RouteGroupBuilder>? _groupConfiguration;
-
+        private string urlPrefix = "/api";
         public void Map(IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/api");
+            var group = app.MapGroup(urlPrefix);
 
             _groupConfiguration?.Invoke(group);
 
@@ -32,7 +32,11 @@ namespace FastSharp.Modules
             }
         }
 
-        protected void ConfigureGroup(Action<RouteGroupBuilder> configure) => _groupConfiguration = configure;
+        protected void ConfigureGroup(string prefix, Action<RouteGroupBuilder> configure)
+        {
+            urlPrefix = prefix;
+            _groupConfiguration = configure;
+        } 
 
         protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
         {

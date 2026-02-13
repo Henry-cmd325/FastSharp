@@ -1,7 +1,7 @@
 using FastSharp.Modules;
 using FastSharp.Tests.Context;
-using FastSharp.Tests.Modules;
 using FastSharp.Tests.Endpoints;
+using FastSharp.Tests.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -83,6 +83,22 @@ namespace FastSharp.Tests
             Assert.Equal(HttpStatusCode.OK, pingResponse.StatusCode);
             var pingText = await pingResponse.Content.ReadAsStringAsync();
             Assert.Equal("pong", pingText);
+        }
+
+        [Fact]
+        public async Task MapFastSharpEndpoints_ConfigureGroup_PrefixesRoutes()
+        {
+            await using var app = await CreateAppAsync();
+            var client = app.GetTestClient();
+
+            var createResponse = await client.PostAsJsonAsync("/api/grouped/items", new TestModel { Id = 10, Name = "Grouped" });
+            Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+            var getResponse = await client.GetAsync("/api/grouped/items/10");
+            Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+
+            var ungroupedResponse = await client.GetAsync("/api/items");
+            Assert.Equal(HttpStatusCode.NotFound, ungroupedResponse.StatusCode);
         }
     }
 }
