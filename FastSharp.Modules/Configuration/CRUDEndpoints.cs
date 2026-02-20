@@ -1,6 +1,7 @@
 ﻿using FastSharp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace FastSharp.Modules.Configuration
 {
@@ -107,9 +108,10 @@ namespace FastSharp.Modules.Configuration
         {
             if (ConfigGetList.Active)
             {
-                var builder = app.MapGet("", async ([FromServices] TDbContext context) =>
+                var builder = app.MapGet("", async Task<Ok<List<TEntity>>> ([FromServices] TDbContext context) =>
                 {
-                    return await context.Set<TEntity>().ToListAsync();
+                    var list = await context.Set<TEntity>().ToListAsync();
+                    return TypedResults.Ok(list);
                 });
 
                 ExecuteOptions(builder, ConfigGetList);
@@ -120,13 +122,13 @@ namespace FastSharp.Modules.Configuration
         {
             if (ConfigGetById.Active)
             {
-                var builder = app.MapGet("/{id}", async ([FromRoute] TKey id, [FromServices] TDbContext context) =>
+                var builder = app.MapGet("/{id}", async Task<Results<Ok<TEntity>, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
                 {
                     var entity = await context.Set<TEntity>().FindAsync(id);
                     if (entity is null)
-                        return Results.NotFound();
+                        return TypedResults.NotFound();
 
-                    return Results.Ok(entity);
+                    return TypedResults.Ok(entity);
                 });
 
                 ExecuteOptions(builder, ConfigGetById);
@@ -137,11 +139,11 @@ namespace FastSharp.Modules.Configuration
         {
             if (ConfigPost.Active)
             {
-                var builder = app.MapPost("", async ([FromBody] TEntity entity, [FromServices] TDbContext context) =>
+                var builder = app.MapPost("", async Task<Created<TEntity>> ([FromBody] TEntity entity, [FromServices] TDbContext context) =>
                 {
                     context.Set<TEntity>().Add(entity);
                     await context.SaveChangesAsync();
-                    return Results.Created($"/{entity.Id?.ToString()}", entity);
+                    return TypedResults.Created($"/{entity.Id?.ToString()}", entity);
                 });
 
                 ExecuteOptions(builder, ConfigPost);
@@ -152,15 +154,14 @@ namespace FastSharp.Modules.Configuration
         {
             if (ConfigPut.Active)
             {
-                var builder = app.MapPut("/{id}", async ([FromRoute] TKey id, [FromBody] TEntity updatedEntity, [FromServices] TDbContext context) =>
+                var builder = app.MapPut("/{id}", async Task<Results<NoContent, NotFound>> ([FromRoute] TKey id, [FromBody] TEntity updatedEntity, [FromServices] TDbContext context) =>
                 {
                     var entity = await context.Set<TEntity>().FindAsync(id);
                     if (entity is null)
-                        return Results.NotFound();
-
+                        return TypedResults.NotFound();
                     context.Entry(entity).CurrentValues.SetValues(updatedEntity);
                     await context.SaveChangesAsync();
-                    return Results.NoContent();
+                    return TypedResults.NoContent();
                 });
 
                 ExecuteOptions(builder, ConfigPut);
@@ -171,17 +172,17 @@ namespace FastSharp.Modules.Configuration
         {
             if (ConfigDelete.Active)
             {
-                var builder = app.MapDelete("/{id}", async ([FromRoute] TKey id, [FromServices] TDbContext context) =>
+                var builder = app.MapDelete("/{id}", async Task<Results<NoContent, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
                 {
                     var entity = await context.Set<TEntity>().FindAsync(id);
                     if (entity is null)
                     {
-                        return Results.NotFound();
+                        return TypedResults.NotFound();
                     }
 
                     context.Set<TEntity>().Remove(entity);
                     await context.SaveChangesAsync();
-                    return Results.NoContent();
+                    return TypedResults.NoContent();
                 });
 
                 ExecuteOptions(builder, ConfigDelete);

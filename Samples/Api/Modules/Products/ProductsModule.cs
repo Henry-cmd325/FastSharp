@@ -3,7 +3,6 @@ using Api.Context.Models;
 using Api.Modules.Products.Endpoints;
 using FastSharp.Modules;
 using FastSharp.Modules.Configuration;
-using Microsoft.EntityFrameworkCore;
 
 namespace Api.Modules.Products
 {
@@ -12,10 +11,10 @@ namespace Api.Modules.Products
         public ProductsModule()
         {
             ConfigureGroup("api/products", opt =>
-             {
-                 opt.WithTags("Productos")
-                 .WithDescription("Endpoints for managing products in the inventory");
-             });
+            {
+                opt.WithTags("Productos")
+                .WithDescription("Endpoints for managing products in the inventory");
+            });
         
             AddCRUD<Product, int>("products", opt =>
             {

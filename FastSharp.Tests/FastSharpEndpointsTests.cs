@@ -71,6 +71,36 @@ namespace FastSharp.Tests
         }
 
         [Fact]
+        public async Task MapFastSharpEndpoints_GetById_ReturnsNotFoundWhenMissing()
+        {
+            await using var app = await CreateAppAsync();
+            var client = app.GetTestClient();
+
+            var response = await client.GetAsync("/api/sample/999");
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task MapFastSharpEndpoints_Put_ReturnsNotFoundWhenMissing()
+        {
+            await using var app = await CreateAppAsync();
+            var client = app.GetTestClient();
+
+            var response = await client.PutAsJsonAsync("/api/sample/999", new TestModel { Id = 999, Name = "Missing" });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task MapFastSharpEndpoints_Delete_ReturnsNotFoundWhenMissing()
+        {
+            await using var app = await CreateAppAsync();
+            var client = app.GetTestClient();
+
+            var response = await client.DeleteAsync("/api/sample/999");
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
         public async Task MapFastSharpEndpoints_RespectsDisabledEndpointsAndIncludesCustom()
         {
             await using var app = await CreateAppAsync();
