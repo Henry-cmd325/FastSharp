@@ -11,6 +11,7 @@ namespace FastSharp.Modules.Configuration
     {
         internal Action<RouteGroupBuilder>? ConfigGroup;
 
+        internal EndpointOptions ConfigGetPaged = new();
         internal EndpointOptions ConfigGetList = new();
         internal EndpointOptions ConfigGetById = new();
         internal EndpointOptions ConfigPost = new();
@@ -27,6 +28,9 @@ namespace FastSharp.Modules.Configuration
         {
             switch (endpointName)
             {
+                case GenericEndpoint.GetPaged:
+                    ConfigGetPaged.Active = false;
+                    break;
                 case GenericEndpoint.GetList:
                     ConfigGetList.Active = false;
                     break;
@@ -54,6 +58,9 @@ namespace FastSharp.Modules.Configuration
         {
             switch (endpointName)
             {
+                case GenericEndpoint.GetPaged:
+                    ConfigGetPaged.Builder = b => configure(b);
+                    break;
                 case GenericEndpoint.GetList:
                     ConfigGetList.Builder = b => configure(b);
                     break;
@@ -90,6 +97,7 @@ namespace FastSharp.Modules.Configuration
 
             if (ConfigAll.Active)
             {
+                MapPaged(group);
                 MapGetList(group);
                 MapGetById(group);
                 MapPost(group);
@@ -102,6 +110,39 @@ namespace FastSharp.Modules.Configuration
         {
             ConfigAll.Builder?.Invoke(app);
             specific?.Builder?.Invoke(app);
+        }
+
+        private void MapPaged(IEndpointRouteBuilder app)
+        {
+            if (ConfigGetPaged.Active)
+            {
+                var builder = app.MapGet("/paged", async Task<Results<Ok<PagedResult<TEntity>>, BadRequest<string>>> ([FromServices] TDbContext context, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
+                {
+                    const int maxPageSize = 100;
+                    if (page < 1)
+                    {
+                        return TypedResults.BadRequest("Page must be greater than or equal to 1.");
+                    }
+
+                    if (pageSize < 1 || pageSize > maxPageSize)
+                    {
+                        return TypedResults.BadRequest($"PageSize must be between 1 and {maxPageSize}.");
+                    }
+
+                    var query = context.Set<TEntity>().AsNoTracking();
+                    var list = await query
+                        .OrderBy(entity => entity.Id)
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+
+                    var result = new PagedResult<TEntity>(list, await query.CountAsync(), page, pageSize);
+
+                    return TypedResults.Ok(result);
+                });
+
+                ExecuteOptions(builder, ConfigGetPaged);
+            }
         }
 
         private void MapGetList(IEndpointRouteBuilder app)

@@ -1,4 +1,5 @@
 using FastSharp.Modules;
+using FastSharp.Models;
 using FastSharp.Tests.Context;
 using FastSharp.Tests.Endpoints;
 using FastSharp.Tests.Modules;
@@ -129,6 +130,34 @@ namespace FastSharp.Tests
 
             var ungroupedResponse = await client.GetAsync("/api/items");
             Assert.Equal(HttpStatusCode.NotFound, ungroupedResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task MapFastSharpEndpoints_Paged_ReturnsPagedResult()
+        {
+            await using var app = await CreateAppAsync();
+            var client = app.GetTestClient();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+                context.Models.AddRange(
+                    new TestModel { Id = 1, Name = "One" },
+                    new TestModel { Id = 2, Name = "Two" },
+                    new TestModel { Id = 3, Name = "Three" });
+                await context.SaveChangesAsync();
+            }
+
+            var response = await client.GetAsync("/api/sample/paged?page=1&pageSize=2");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<PagedResult<TestModel>>();
+            Assert.NotNull(result);
+            Assert.Equal(1, result!.Page);
+            Assert.Equal(2, result.PageSize);
+            Assert.Equal(3, result.TotalItems);
+            Assert.Equal(2, result.Items.Count());
+            Assert.Equal(new[] { 1, 2 }, result.Items.Select(item => item.Id).ToArray());
         }
     }
 }
