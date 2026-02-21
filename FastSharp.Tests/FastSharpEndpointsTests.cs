@@ -92,6 +92,19 @@ namespace FastSharp.Tests
         }
 
         [Fact]
+        public async Task MapFastSharpEndpoints_Put_ReturnsBadRequestWhenIdMismatch()
+        {
+            await using var app = await CreateAppAsync();
+            var client = app.GetTestClient();
+
+            var createResponse = await client.PostAsJsonAsync("/api/sample", new TestModel { Id = 1, Name = "Widget" });
+            Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+            var response = await client.PutAsJsonAsync("/api/sample/1", new TestModel { Id = 2, Name = "Mismatch" });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
         public async Task MapFastSharpEndpoints_Delete_ReturnsNotFoundWhenMissing()
         {
             await using var app = await CreateAppAsync();

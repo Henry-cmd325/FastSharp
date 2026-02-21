@@ -195,8 +195,18 @@ namespace FastSharp.Modules.Configuration
         {
             if (ConfigPut.Active)
             {
-                var builder = app.MapPut("/{id}", async Task<Results<NoContent, NotFound>> ([FromRoute] TKey id, [FromBody] TEntity updatedEntity, [FromServices] TDbContext context) =>
+                var builder = app.MapPut(
+                    "/{id}", 
+                    async Task<Results<NoContent, NotFound, BadRequest<string>>> (
+                        [FromRoute] TKey id, 
+                        [FromBody] TEntity updatedEntity, 
+                        [FromServices] TDbContext context) =>
                 {
+                    if (!EqualityComparer<TKey>.Default.Equals(id, updatedEntity.Id))
+                    {
+                        return TypedResults.BadRequest("Route id must match body id.");
+                    }
+
                     var entity = await context.Set<TEntity>().FindAsync(id);
                     if (entity is null)
                         return TypedResults.NotFound();
