@@ -2,13 +2,12 @@
 
 [Volver al README / Back to README](../README.md)
 
-## Õndice / Index
+## √çndice / Index
 
 - [Arquitectura modular / Modular architecture](architecture.md)
-- [Uso b·sico / Basic usage](basic-usage.md)
+- [Uso b√°sico / Basic usage](basic-usage.md)
 - [Endpoints personalizados / Custom endpoints](custom-endpoints.md)
 
-- [ ] Validar `id` de ruta vs `Id` del cuerpo en `PUT` / Validate route `id` vs body `Id` on `PUT`
-- [ ] PaginaciÛn y filtrado (opcional) / Paging and filtering (optional)
-- [ ] Metadatos NuGet y publicaciÛn CI/CD / NuGet metadata and CI/CD publish
-- [ ] ValidaciÛn autom·tica de modelos / Automatic model validation
+- [ ] filtrado (opcional) / filtering (optional)
+- [ ] Uso de DTOs en los endpoints gen√©ricos / Using DTOs in generic endpoints 
+- [ ] Validaci√≥n autom√°tica de modelos / Automatic model validation
