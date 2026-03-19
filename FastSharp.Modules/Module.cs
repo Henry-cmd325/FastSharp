@@ -2,71 +2,104 @@
 using FastSharp.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace FastSharp.Modules
+namespace FastSharp.Modules;
+
+public abstract class Module<TDbContext> : IFastModule where TDbContext : DbContext
 {
-    public abstract class Module<TDbContext> : IFastModule where TDbContext : DbContext
+    private readonly List<Type> _moduleEndpoints = [];
+    private readonly List<ICrudEndpoints<TDbContext>> _crudOptionsList = [];
+    private Action<RouteGroupBuilder>? _groupConfiguration;
+    private string urlPrefix = "/api";
+
+    // This is implemented explicitly so the method cannot be called directly by consumers,
+    // and can only be invoked by the FastSharp engine when building the Minimal APIs.
+    void IFastModule.Map(IEndpointRouteBuilder app)
     {
-        private readonly List<Type> _moduleEndpoints = [];
-        private readonly List<ICrudEndpoints<TDbContext>> _crudOptionsList = [];
-        private Action<RouteGroupBuilder>? _groupConfiguration;
-        private string urlPrefix = "/api";
-        public void Map(IEndpointRouteBuilder app)
+        var group = app.MapGroup(urlPrefix);
+
+        _groupConfiguration?.Invoke(group);
+
+        foreach (var crudOptions in _crudOptionsList)
         {
-            var group = app.MapGroup(urlPrefix);
-
-            _groupConfiguration?.Invoke(group);
-
-            // Primero mapeamos los endpoints CRUD para que tengan prioridad sobre los endpoints personalizados
-            foreach (var crudOptions in _crudOptionsList)
-            {
-                crudOptions.Map(group);
-            }
-
-            using var scope = app.ServiceProvider.CreateScope();
-            var provider = scope.ServiceProvider;
-
-            foreach (var endpointType in _moduleEndpoints)
-            {
-                var endpoint = (IEndpoint)provider.GetRequiredService(endpointType);
-                endpoint.Map(group);
-            }
+            crudOptions.Map(group);
         }
 
-        protected void ConfigureGroup(string prefix, Action<RouteGroupBuilder> configure)
-        {
-            urlPrefix = prefix;
-            _groupConfiguration = configure;
-        } 
+        using var scope = app.ServiceProvider.CreateScope();
+        var provider = scope.ServiceProvider;
 
-        protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
+        foreach (var endpointType in _moduleEndpoints)
         {
-            var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix);
-            configure?.Invoke(options);
-            _crudOptionsList.Add(options);
+            var endpoint = (IEndpoint)provider.GetRequiredService(endpointType);
+            endpoint.Map(group);
         }
+    }
 
-        protected void IncludeNamespace<T>() where T : IEndpoint
-        {
-            var ns = typeof(T).Namespace;
-            // Escaneamos el ensamblado buscando clases que:
-            // 1. Estén en el namespace indicado.
-            // 2. Implementen IFastEndpoint.
-            var targetAssembly = typeof(T).Assembly;
-            var types = targetAssembly
-                .GetTypes()
-                .Where(p => typeof(IEndpoint).IsAssignableFrom(p)
-                            && p.IsClass
-                            && p.Namespace?.StartsWith(ns ?? string.Empty) == true
-                            && !p.IsAbstract);
+    /// <summary>
+    /// Configures the routing module with a specified URL prefix and a configuration action for the route group.
+    /// </summary>
+    /// <param name="prefix">The URL prefix to apply to the route group. This prefix is used as the base path for all routes defined
+    /// within the module.</param>
+    /// <param name="configure">An action that configures the route group. Use this action to define routes and additional settings within
+    /// the specified prefix.</param>
+    protected void ConfigureModule(string prefix, Action<RouteGroupBuilder> configure)
+    {
+        urlPrefix = prefix;
+        _groupConfiguration = configure;
+    }
 
-            // Guardamos el tipo para que el motor de FastSharp lo ejecute
-            // al momento de construir las Minimal APIs
-            _moduleEndpoints.AddRange(types);
-        }
+    /// <summary>
+    /// Adds a set of CRUD endpoints for a specific entity.
+    /// Each endpoint (Get, GetList, GetPaged, Create, Update, Delete) can be configured individually,
+    /// or a shared configuration can be applied to the entire CRUD group.
+    /// </summary>
+    /// <typeparam name="TEntity">The entity type.</typeparam>
+    /// <typeparam name="TKey">The entity primary key type.</typeparam>
+    /// <param name="routePrefix">The route prefix for the CRUD endpoints.</param>
+    /// <param name="configure">An action that configures the CRUD endpoints.</param>
+    protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
+    {
+        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix);
+        configure?.Invoke(options);
+        _crudOptionsList.Add(options);
+    }
 
-        protected void Include<TEndpoint>()
-        {
-            _moduleEndpoints.Add(typeof(TEndpoint));
-        }
+    /// <summary>
+    /// Registers all non-abstract classes in the namespace of the specified type that implement the IEndpoint
+    /// interface for use in Minimal APIs.
+    /// </summary>
+    /// <remarks>This method scans the assembly of the specified type T to find all non-abstract
+    /// classes within the same namespace that implement IEndpoint. The discovered types are added to the module
+    /// endpoints collection, making them available for execution by the FastSharp engine when constructing Minimal
+    /// APIs.</remarks>
+    /// <typeparam name="T">The type whose namespace will be scanned for IEndpoint implementations. Must implement IEndpoint.</typeparam>
+    protected void IncludeNamespace<T>() where T : IEndpoint
+    {
+        var ns = typeof(T).Namespace;
+        // Scan the assembly for classes that:
+        // 1. Are in the target namespace.
+        // 2. Implement IEndpoint.
+        var targetAssembly = typeof(T).Assembly;
+        var types = targetAssembly
+            .GetTypes()
+            .Where(p => typeof(IEndpoint).IsAssignableFrom(p)
+                        && p.IsClass
+                        && p.Namespace?.StartsWith(ns ?? string.Empty) == true
+                        && !p.IsAbstract);
+
+        // Store the type so the FastSharp engine can execute it
+        // when building the Minimal APIs.
+        _moduleEndpoints.AddRange(types);
+    }
+
+    /// <summary>
+    /// Adds the specified endpoint to the module's collection of recognized endpoints.
+    /// </summary>
+    /// <remarks>Call this method to register an additional endpoint with the module.
+    /// Try to always use this method instead of IncludeNamespace when possible, as it is more explicit and makes the module's behavior clearer.
+    /// </remarks>
+    /// <typeparam name="TEndpoint">The type of the endpoint to include. Must implement the IEndpoint interface.</typeparam>
+    protected void Include<TEndpoint>() where TEndpoint : IEndpoint
+    {
+        _moduleEndpoints.Add(typeof(TEndpoint));
     }
 }

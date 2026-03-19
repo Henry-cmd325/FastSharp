@@ -1,13 +1,12 @@
-﻿namespace FastSharp.Modules.Configuration
+﻿namespace FastSharp.Modules.Configuration;
+
+public enum GenericEndpoint
 {
-    public enum GenericEndpoint
-    {
-        GetPaged,
-        GetList,
-        GetById,
-        Create,
-        Update,
-        Delete,
-        All
-    }
+    GetPaged,
+    GetList,
+    GetById,
+    Create,
+    Update,
+    Delete,
+    All
 }

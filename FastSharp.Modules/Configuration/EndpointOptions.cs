@@ -1,8 +1,9 @@
-﻿namespace FastSharp.Modules.Configuration
+﻿namespace FastSharp.Modules.Configuration;
+
+public class EndpointOptions
 {
-    public class EndpointOptions
-    {
-        public bool Active { get; set; } = true;
-        public Action<RouteHandlerBuilder>? Builder { get; set; }
-    }
+    public Type? ResponseType { get; set; } = null;
+    public Type? RequestType { get; set; } = null;
+    public bool Active { get; set; } = true;
+    public Action<RouteHandlerBuilder>? Builder { get; set; }
 }

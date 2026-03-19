@@ -1,7 +1,6 @@
-﻿namespace FastSharp.Modules
+﻿namespace FastSharp.Modules;
+
+public interface IEndpoint
 {
-    public interface IEndpoint
-    {
-        public void Map(RouteGroupBuilder app);
-    }
+    public void Map(RouteGroupBuilder app);
 }
