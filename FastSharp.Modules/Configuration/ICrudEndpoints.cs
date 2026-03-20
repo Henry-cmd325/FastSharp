@@ -5,9 +5,10 @@ namespace FastSharp.Modules.Configuration;
 
 public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
 {
-    Type EntityType { get; }
-    Type KeyType { get; }
-
+    /// <summary>
+    /// Disables the specified generic endpoint, preventing it from being registered as a route for incoming requests so you can make your own implementation or simply not using it.
+    /// </summary>
+    /// <param name="endpointName">The generic endpoint to disable. This parameter must not be null.</param>
     public void DisableEndpoint(GenericEndpoint endpointName);
 
     /// <summary>
@@ -16,8 +17,8 @@ public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     /// <remarks>
     /// The provided <typeparamref name="TDto"/> is used as the contract for GetById, GetList, GetPaged,
     /// Create, and Update endpoints.
-    /// For list and paged endpoints, the framework wraps the DTO automatically as <c>List&lt;TDto&gt;</c>
-    /// and <see cref="PagedResult{T}"/>.
+    /// For list and paged endpoints, the framework wraps the DTO automatically as <see cref="List{TDto}"/>
+    /// and <see cref="PagedResult{TDto}"/>.
     /// </remarks>
     /// <typeparam name="TDto">The DTO type used for all CRUD endpoints.</typeparam>
     /// <param name="configure">Optional endpoint configuration applied to all mapped CRUD handlers.</param>
@@ -30,13 +31,22 @@ public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     /// <typeparamref name="TResponse"/> is used for GetById, GetList, and GetPaged responses.
     /// <typeparamref name="TRequest"/> is used for Create and Update request bodies.
     /// Create returns <typeparamref name="TResponse"/>.
-    /// For list and paged endpoints, the framework wraps <typeparamref name="TResponse"/> automatically
-    /// as <c>List&lt;TResponse&gt;</c> and <see cref="PagedResult{T}"/>.
+    /// For list and paged endpoints, FastSharp wraps <typeparamref name="TResponse"/> automatically
+    /// as <see cref="List{TResponse}"/> and <see cref="PagedResult{TResponse}"/>.
     /// </remarks>
     /// <typeparam name="TRequest">The DTO type used for write operations.</typeparam>
     /// <typeparam name="TResponse">The DTO type used for read operations.</typeparam>
     /// <param name="configure">Optional endpoint configuration applied to all mapped CRUD handlers.</param>
     public void ConfigureAll<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class;
+    
+    /// <summary>
+    /// Configures the route group using the specified configuration action for all the endpoints of the generic CRUD.
+    /// </summary>
+    /// <remarks>This method allows for the customization of route groups, enabling developers to define
+    /// specific routing behaviors and settings.
+    /// settings.</remarks>
+    /// <param name="configure">An optional action that configures the route group. If provided, it receives a RouteGroupBuilder instance to
+    /// define the routes within the group.</param>
     public void ConfigureGroup(Action<RouteGroupBuilder>? configure = null);
     public void Get(Action<RouteHandlerBuilder>? configure = null);
     public void Get<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class;

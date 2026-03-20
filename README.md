@@ -3,6 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/FastSharp.Modules?logo=nuget)](https://www.nuget.org/packages/FastSharp.Modules)
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet)
 [![Publish NuGet packages](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml/badge.svg)](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml)
+[![codecov](https://codecov.io/gh/Henry-cmd325/FastSharp/branch/develop/graph/badge.svg)](https://codecov.io/gh/Henry-cmd325/FastSharp)
 [![Stars](https://img.shields.io/github/stars/Henry-cmd325/FastSharp?logo=github&style=flat)](https://github.com/Henry-cmd325/FastSharp)
 
 **ES**: FastSharp es una librería ligera para crear MVPs y APIs en C# y ASP.NET Core (Minimal APIs) con CRUDs y endpoints personalizados basados en convenciones.
@@ -53,7 +54,7 @@ dotnet add package FastSharp.Models
 ## Quick start / Inicio rápido
 
 ```csharp
-// YourProject/Slices/Products/ProductsModule.cs
+// YourProject/Modules/Products/ProductsModule.cs
 using FastSharp.Modules;
 using FastSharp.Modules.Configuration;
 using YourProject.Data;
@@ -64,19 +65,43 @@ public class ProductsModule : Module<ApiDbContext>
     public ProductsModule()
     {
         // Configure the endpoint group for this module (also applies to CRUDs) this method is optional but allows you to set metadata or policies at the group level.
-        ConfigureGroup(opt =>
-            {
-                opt.WithTags("Productos")
-                .WithDescription("Endpoints for managing products in the inventory");
-            });
-        
-        AddCRUD<Product, int>("/products", opt =>
+        ConfigureModule("api/", module =>
         {
-            opt.DisableEndpoint(GenericEndpoint.GetList);
-            opt.ConfigureAll(endpoint => endpoint.WithTags("Products"));
+            module
+                .WithTags("Productos")
+                .WithDescription("Endpoints for managing products in the inventory");
+        });
+        
+        //You can add a CRUD for a model in a single line of code, the generic parameters are the model type and the type of its identifier.
+        //This generates the standard CRUD endpoints (GetPaged, GetList, Get, Create, Update and Delete) following REST conventions and using Entity Framework Core for data access.
+        AddCRUD<Product, int>("products");
+
+        //Alternatively, you can add a CRUD with custom configuration.
+        AddCRUD<Product, int>("products/alternatively", crud =>
+        {
+            // You can configure the CRUD endpoints individually, or use ConfigureAll to apply the same configuration to all of them.
+            crud.ConfigureAll(endpoint => endpoint.WithTags("Products"));
+            
+            // You can also disable specific CRUD endpoints if you don't need them always do it after configureAll since that method enables all endpoints of the generic CRUD.
+            crud.DisableEndpoint(GenericEndpoint.GetList);
+
+            // You can also configure specific endpoints, for example to add a description that will be reflected in the OpenAPI documentation.
+            // Always remember that the variable "endpoint" in this context is of type "RouteHandlerBuilder", which is the oficial Microsoft's object to configure routes.
+            // The above also aplies to the "module" variable in the ConfigureModule method, which is also of type "RouteGroupBuilder".
+            crud.Get(endpoint =>
+            {
+                endpoint.WithDescription("Get a product by its unique identifier");
+            });
+
+            // If you want to use DTOs for the CRUD endpoints, you can specify them in the configuration of each endpoint:
+            crud.Update<ProductDto>();
         });
 
-        IncludeNamespace<CheckProductStock>();
+        //Also you can configure DTOs for the CRUD endpoints:
+        AddCRUD<Product, int>("products/with-dtos", crud => crud.ConfigureAll<ProductDto>());
+
+        // You can also add custom endpoints in the same module, which will inherit the module's configuration.
+        Include<CheckProductStock>();
     }
 }
 ```

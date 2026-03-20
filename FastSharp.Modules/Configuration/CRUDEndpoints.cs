@@ -21,9 +21,6 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey>(string routePrefix = "") :
 
     internal string RoutePrefix { get; set; } = routePrefix;
 
-    public Type EntityType => typeof(TEntity);
-    public Type KeyType => typeof(TKey);
-
     private EndpointOptions CreateEndpointOptions(Action<RouteHandlerBuilder>? configure = null, bool active = true) =>
         new() { Builder = configure, Active = active };
 
