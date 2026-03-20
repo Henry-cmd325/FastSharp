@@ -60,7 +60,7 @@ public class ProductsModule : Module<YourDbContext>
             // Example: Disable an endpoint
             opt.DisableEndpoint(GenericEndpoint.GetList)
                // Example: Configure a specific endpoint
-               .ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
+            opt.ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
                    endpoint.WithDescription("Deletes a product by its unique identifier"));
         });
     }
@@ -107,6 +107,7 @@ For a module named `ProductsModule` configured with `AddCRUD<Product, int>("/pro
 
 - `GET    /api/products` -> Lista todos los productos / Lists all products.
 - `GET    /api/products/{id}` -> Obtiene un producto por su ID / Gets a product by ID.
+- `GET    /api/products/paged?page=1&pageSize=10` -> Lista paginada / Paged list.
 - `POST   /api/products` -> Crea un nuevo producto / Creates a new product.
 - `PUT    /api/products/{id}` -> Actualiza un producto existente / Updates an existing product.
 - `DELETE /api/products/{id}` -> Elimina un producto / Deletes a product.

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FastSharp.Modules.Endpoints;
 
-public class GetListEndpoint<TDbContext, TEntity, TKey>
+public class GetListEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
     where TEntity : class, IModel<TKey>
     where TDbContext : DbContext
 {
@@ -18,7 +18,7 @@ public class GetListEndpoint<TDbContext, TEntity, TKey>
         _options = options;
     }
 
-    public virtual void Handle(RouteGroupBuilder app, EndpointOptions allOptions)
+    public virtual void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
         {
@@ -39,7 +39,7 @@ public class GetListEndpoint<TDbContext, TEntity, TKey, TDto> : GetListEndpoint<
     where TDbContext : DbContext
     where TDto : class
 {
-    public override void Handle(RouteGroupBuilder app, EndpointOptions allOptions)
+    public override void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
         {

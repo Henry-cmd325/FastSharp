@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FastSharp.Modules.Endpoints;
 
-public class DeleteEndpoint<TDbContext, TEntity, TKey>
+public class DeleteEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
     where TEntity : class, IModel<TKey>
     where TDbContext : DbContext
 {
@@ -17,7 +17,7 @@ public class DeleteEndpoint<TDbContext, TEntity, TKey>
         _options = options;
     }
 
-    public virtual void Handle(RouteGroupBuilder app, EndpointOptions allOptions)
+    public virtual void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
         {

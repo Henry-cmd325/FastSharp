@@ -5,36 +5,35 @@ using Api.Modules.Products.Endpoints;
 using FastSharp.Modules;
 using FastSharp.Modules.Configuration;
 
-namespace Api.Modules.Products
+namespace Api.Modules.Products;
+
+public class ProductsModule : Module<ApiDbContext>
 {
-    public class ProductsModule : Module<ApiDbContext>
+    public ProductsModule()
     {
-        public ProductsModule()
+        ConfigureModule("api/products", opt =>
         {
-            ConfigureModule("api/products", opt =>
-            {
-                opt.WithTags("Productos")
-                .WithDescription("Endpoints for managing products in the inventory");
-            });
+            opt.WithTags("Productos")
+            .WithDescription("Endpoints for managing products in the inventory");
+        });
         
-            AddCRUD<Product, int>("products", crud =>
+        AddCRUD<Product, int>("products", crud =>
+        {
+            crud.DisableEndpoint(GenericEndpoint.GetList);
+
+            crud.GetPaged<ProductDto>((endpoint) =>
             {
-                crud.DisableEndpoint(GenericEndpoint.GetList);
-
-                crud.GetPaged<ProductDto>((endpoint) =>
-                {
-                    endpoint.WithDescription("Retrieves a product by its unique identifier").WithTags("Get");
-                });
-
-                crud.Create<ProductRequest, ProductDto>((endpoint) =>
-                {
-                    endpoint.WithDescription("Creates a new product").WithTags("Create");
-                });
+                endpoint.WithDescription("Retrieves a product by its unique identifier").WithTags("Get");
             });
 
-            AddCRUD<Product, int>("products/alternative");
+            crud.Create<ProductRequest, ProductDto>((endpoint) =>
+            {
+                endpoint.WithDescription("Creates a new product").WithTags("Create");
+            });
+        });
 
-            IncludeNamespace<CheckProductStock>();
-        }
+        AddCRUD<Product, int>("products/alternative", crud => crud.ConfigureAll<ProductDto>());
+
+        IncludeNamespace<CheckProductStock>();
     }
 }

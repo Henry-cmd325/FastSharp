@@ -7,9 +7,9 @@
 - [Arquitectura modular / Modular architecture](architecture.md)
 - [Uso básico / Basic usage](basic-usage.md)
 
-**ES**: La personalización de los endpoints CRUD se realiza en el constructor de tu módulo a través del método `AddCRUD`. El primer parámetro es la ruta base y el segundo (opcional) te da acceso a un objeto de opciones (`CrudOptions<TModel, TId>`), que te permite modificar o deshabilitar los endpoints genéricos.
+**ES**: La personalización de los endpoints CRUD se realiza en el constructor de tu módulo a través del método `AddCRUD`. El primer parámetro es la ruta base y el segundo (opcional) te da acceso a `ICrudEndpoints<TDbContext>`, que te permite aplicar configuración compartida, deshabilitar endpoints y definir contratos DTO.
 
-**EN**: Customization of CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route and the second (optional) provides an options object (`CrudOptions<TModel, TId>`), allowing you to modify or disable the generic endpoints.
+**EN**: Customization of CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route and the second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
 
 **ES**: Para configurar el grupo base del módulo (aplicando opciones a todos los endpoints del grupo), usa `ConfigureGroup`. Esto te permite agregar metadata o políticas a nivel de grupo.
 
@@ -33,20 +33,71 @@ public class ProductsModule : Module<YourDbContext>
         AddCRUD<Product, int>("/products", options =>
         {
             // Example 1: Disable an endpoint
-            options.DisableEndpoint(GenericEndpoint.GetList)
-                   // Example 2: Add OpenAPI metadata to an endpoint
-                   .ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
-                   {
-                       endpoint.WithDescription("Deletes a product permanently.");
-                   });
+            options.DisableEndpoint(GenericEndpoint.GetList);
+
+            // Example 2: Apply metadata to all CRUD endpoints
+            options.ConfigureAll(endpoint =>
+            {
+                endpoint.WithDescription("Products CRUD endpoint");
+            });
         });
     }
 }
 ```
 
-**ES**: El parámetro `endpoint` dentro de `options.ConfigureEndpoint` es un `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (o similar, según la versión de .NET). Esto te permite acceder a los métodos de extensión de Minimal APIs para configuración granular (ej. `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`).
+**ES**: El parámetro `endpoint` dentro de `ConfigureAll`, `Get`, `GetList`, `GetPaged`, `Create`, `Update` y `Delete` es un `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (o similar, según la versión de .NET). Esto te permite acceder a métodos de extensión de Minimal APIs como `WithOpenApi`, `RequireAuthorization`, `Accepts` y `Produces`.
 
-**EN**: The `endpoint` parameter within `options.ConfigureEndpoint` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This grants access to Minimal APIs extension methods for granular configuration (e.g., `WithOpenApi`, `RequireAuthorization`, `Accepts`, `Produces`).
+**EN**: The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `GetPaged`, `Create`, `Update`, and `Delete` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This gives access to Minimal APIs extension methods like `WithOpenApi`, `RequireAuthorization`, `Accepts`, and `Produces`.
+
+---
+
+# Contratos DTO / DTO contracts
+
+## 1) Un solo DTO para todo el CRUD / Single DTO for all CRUD endpoints
+
+```csharp
+AddCRUD<Product, int>("/products", options =>
+{
+    options.ConfigureAll<ProductDto>();
+});
+```
+
+**ES**: Contratos resultantes:
+- `GET /{id}` -> `ProductDto`
+- `GET /` -> `List<ProductDto>`
+- `GET /paged` -> `PagedResult<ProductDto>`
+- `POST /` -> request `ProductDto`, response `ProductDto`
+- `PUT /{id}` -> request `ProductDto`
+
+**EN**: Resulting contracts:
+- `GET /{id}` -> `ProductDto`
+- `GET /` -> `List<ProductDto>`
+- `GET /paged` -> `PagedResult<ProductDto>`
+- `POST /` -> request `ProductDto`, response `ProductDto`
+- `PUT /{id}` -> request `ProductDto`
+
+## 2) DTO separado para escritura/lectura / Separate write/read DTOs
+
+```csharp
+AddCRUD<Product, int>("/products", options =>
+{
+    options.ConfigureAll<ProductWriteDto, ProductReadDto>();
+});
+```
+
+**ES**: Contratos resultantes:
+- `GET /{id}` -> `ProductReadDto`
+- `GET /` -> `List<ProductReadDto>`
+- `GET /paged` -> `PagedResult<ProductReadDto>`
+- `POST /` -> request `ProductWriteDto`, response `ProductReadDto`
+- `PUT /{id}` -> request `ProductWriteDto`
+
+**EN**: Resulting contracts:
+- `GET /{id}` -> `ProductReadDto`
+- `GET /` -> `List<ProductReadDto>`
+- `GET /paged` -> `PagedResult<ProductReadDto>`
+- `POST /` -> request `ProductWriteDto`, response `ProductReadDto`
+- `PUT /{id}` -> request `ProductWriteDto`
 
 ---
 

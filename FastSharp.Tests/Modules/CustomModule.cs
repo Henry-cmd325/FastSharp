@@ -3,14 +3,13 @@ using FastSharp.Modules.Configuration;
 using FastSharp.Tests.Context;
 using FastSharp.Tests.Endpoints;
 
-namespace FastSharp.Tests.Modules
+namespace FastSharp.Tests.Modules;
+
+public sealed class CustomModule : Module<TestDbContext>
 {
-    public sealed class CustomModule : Module<TestDbContext>
+    public CustomModule()
     {
-        public CustomModule()
-        {
-            AddCRUD<TestModel, int>("/custom", options => options.DisableEndpoint(GenericEndpoint.GetList));
-            IncludeNamespace<PingEndpoint>();
-        }
+        AddCRUD<TestModel, int>("/custom", options => options.DisableEndpoint(GenericEndpoint.GetList));
+        IncludeNamespace<PingEndpoint>();
     }
 }

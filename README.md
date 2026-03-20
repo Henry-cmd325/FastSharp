@@ -72,9 +72,8 @@ public class ProductsModule : Module<ApiDbContext>
         
         AddCRUD<Product, int>("/products", opt =>
         {
-            opt.DisableEndpoint(GenericEndpoint.GetList)
-               .ConfigureEndpoint(GenericEndpoint.Delete, endpoint =>
-                   endpoint.WithTags("Delete"));
+            opt.DisableEndpoint(GenericEndpoint.GetList);
+            opt.ConfigureAll(endpoint => endpoint.WithTags("Products"));
         });
 
         IncludeNamespace<CheckProductStock>();

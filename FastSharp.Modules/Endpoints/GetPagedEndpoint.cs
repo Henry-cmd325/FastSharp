@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FastSharp.Modules.Endpoints;
 
-public class GetPagedEndpoint<TDbContext, TEntity, TKey>
+public class GetPagedEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
     where TEntity : class, IModel<TKey>
     where TDbContext : DbContext
 {
@@ -18,7 +18,7 @@ public class GetPagedEndpoint<TDbContext, TEntity, TKey>
         _options = options;
     }
 
-    public virtual void Handle(RouteGroupBuilder app, EndpointOptions allOptions)
+    public virtual void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
         {
@@ -54,12 +54,13 @@ public class GetPagedEndpoint<TDbContext, TEntity, TKey>
     }
 }
 
+//With DTO
 public class GetPagedEndpoint<TDbContext, TEntity, TKey, TDto> : GetPagedEndpoint<TDbContext, TEntity, TKey>
     where TEntity : class, IModel<TKey>
     where TDbContext : DbContext
     where TDto : class
 {
-    public override void Handle(RouteGroupBuilder app, EndpointOptions allOptions)
+    public override void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
         {
