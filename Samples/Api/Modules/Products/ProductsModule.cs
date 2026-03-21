@@ -34,6 +34,6 @@ public class ProductsModule : Module<ApiDbContext>
 
         AddCRUD<Product, int>("products/alternative", crud => crud.ConfigureAll<ProductDto>());
 
-        IncludeNamespace<CheckProductStock>();
+        Include<CheckProductStock>();
     }
 }
