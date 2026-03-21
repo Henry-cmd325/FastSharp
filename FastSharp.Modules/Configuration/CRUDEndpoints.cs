@@ -1,243 +1,179 @@
 ﻿using FastSharp.Models;
-using Microsoft.AspNetCore.Mvc;
+using FastSharp.Modules.Endpoints;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace FastSharp.Modules.Configuration
+namespace FastSharp.Modules.Configuration;
+
+public class CRUDEndpoints<TDbContext, TEntity, TKey>(string routePrefix = "") : ICrudEndpoints<TDbContext>
+    where TEntity : class, IModel<TKey>
+    where TDbContext : DbContext
 {
-    public class CRUDEndpoints<TDbContext, TEntity, TKey>(string routePrefix = "") : ICrudEndpoints<TDbContext>
-        where TEntity : class, IModel<TKey>
-        where TDbContext : DbContext
+    internal Action<RouteGroupBuilder>? ConfigGroup;
+
+    internal EndpointOptions ConfigAll = new();
+
+    internal IGenericEndpoint GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey>();
+    internal IGenericEndpoint GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey>();
+    internal IGenericEndpoint GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey>();
+    internal IGenericEndpoint CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey>();
+    internal IGenericEndpoint UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey>();
+    internal IGenericEndpoint DeleteEndpoint = new DeleteEndpoint<TDbContext, TEntity, TKey>();
+
+    internal string RoutePrefix { get; set; } = routePrefix;
+
+    private EndpointOptions CreateEndpointOptions(Action<RouteHandlerBuilder>? configure = null, bool active = true) =>
+        new() { Builder = configure, Active = active };
+
+    private void ConfigureEndpoint(IGenericEndpoint endpoint, Action<RouteHandlerBuilder>? configure = null, bool active = true) =>
+        endpoint.Configure(CreateEndpointOptions(configure, active));
+
+    private IEnumerable<IGenericEndpoint> GetAllEndpoints()
     {
-        internal Action<RouteGroupBuilder>? ConfigGroup;
+        yield return GetByIdEndpoint;
+        yield return GetListEndpoint;
+        yield return GetPagedEndpoint;
+        yield return CreateEndpoint;
+        yield return UpdateEndpoint;
+        yield return DeleteEndpoint;
+    }
 
-        internal EndpointOptions ConfigGetPaged = new();
-        internal EndpointOptions ConfigGetList = new();
-        internal EndpointOptions ConfigGetById = new();
-        internal EndpointOptions ConfigPost = new();
-        internal EndpointOptions ConfigPut = new();
-        internal EndpointOptions ConfigDelete = new();
-        internal EndpointOptions ConfigAll = new();
+    private IGenericEndpoint? GetEndpoint(GenericEndpoint endpointName) => endpointName switch
+    {
+        GenericEndpoint.GetPaged => GetPagedEndpoint,
+        GenericEndpoint.GetList => GetListEndpoint,
+        GenericEndpoint.GetById => GetByIdEndpoint,
+        GenericEndpoint.Create => CreateEndpoint,
+        GenericEndpoint.Update => UpdateEndpoint,
+        GenericEndpoint.Delete => DeleteEndpoint,
+        _ => null
+    };
 
-        internal string RoutePrefix { get; set; } = routePrefix;
-
-        public Type EntityType => typeof(TEntity);
-        public Type KeyType => typeof(TKey);
-
-        public ICrudEndpoints<TDbContext> DisableEndpoint(GenericEndpoint endpointName)
+    public void DisableEndpoint(GenericEndpoint endpointName)
+    {
+        if (endpointName == GenericEndpoint.All)
         {
-            switch (endpointName)
+            foreach (var endpoint in GetAllEndpoints())
             {
-                case GenericEndpoint.GetPaged:
-                    ConfigGetPaged.Active = false;
-                    break;
-                case GenericEndpoint.GetList:
-                    ConfigGetList.Active = false;
-                    break;
-                case GenericEndpoint.GetById:
-                    ConfigGetById.Active = false;
-                    break;
-                case GenericEndpoint.Create:
-                    ConfigPost.Active = false;
-                    break;
-                case GenericEndpoint.Update:
-                    ConfigPut.Active = false;
-                    break;
-                case GenericEndpoint.Delete:
-                    ConfigDelete.Active = false;
-                    break;
-                case GenericEndpoint.All:
-                    ConfigAll.Active = false;
-                    break;
+                ConfigureEndpoint(endpoint, active: false);
             }
 
-            return this;
+            return;
         }
 
-        public ICrudEndpoints<TDbContext> ConfigureEndpoint(GenericEndpoint endpointName, Action<RouteHandlerBuilder> configure)
-        {
-            switch (endpointName)
-            {
-                case GenericEndpoint.GetPaged:
-                    ConfigGetPaged.Builder = b => configure(b);
-                    break;
-                case GenericEndpoint.GetList:
-                    ConfigGetList.Builder = b => configure(b);
-                    break;
-                case GenericEndpoint.GetById:
-                    ConfigGetById.Builder = b => configure(b);
-                    break;
-                case GenericEndpoint.Create:
-                    ConfigPost.Builder = b => configure(b);
-                    break;
-                case GenericEndpoint.Update:
-                    ConfigPut.Builder = b => configure(b);
-                    break;
-                case GenericEndpoint.Delete:
-                    ConfigDelete.Builder = b => configure(b);
-                    break;
-                case GenericEndpoint.All:
-                    ConfigAll.Builder = b => configure(b);
-                    break;
-            }
+        var endpointToDisable = GetEndpoint(endpointName);
+        if (endpointToDisable is null)
+            return;
 
-            return this;
-        }
+        ConfigureEndpoint(endpointToDisable, active: false);
+    }
 
-        public ICrudEndpoints<TDbContext> ConfigureGroup(Action<RouteGroupBuilder> configure)
-        {
-            ConfigGroup = configure;
-            return this;
-        }
+    public void ConfigureGroup(Action<RouteGroupBuilder>? configure) => ConfigGroup = configure;
 
-        public void Map(RouteGroupBuilder group)
-        {
-            group = group.MapGroup(RoutePrefix);
-            ConfigGroup?.Invoke(group);
+    public void ConfigureAll(Action<RouteHandlerBuilder> configure)
+    {
+        ConfigAll = CreateEndpointOptions(configure);
+    }
 
-            if (ConfigAll.Active)
-            {
-                MapPaged(group);
-                MapGetList(group);
-                MapGetById(group);
-                MapPost(group);
-                MapPut(group);
-                MapDelete(group);
-            }
-        }
+    public void ConfigureAll<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
+    {
+        ConfigAll = CreateEndpointOptions(configure);
 
-        private void ExecuteOptions(RouteHandlerBuilder app, EndpointOptions? specific)
-        {
-            ConfigAll.Builder?.Invoke(app);
-            specific?.Builder?.Invoke(app);
-        }
+        GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(GetByIdEndpoint, configure);
 
-        private void MapPaged(IEndpointRouteBuilder app)
-        {
-            if (ConfigGetPaged.Active)
-            {
-                var builder = app.MapGet("/paged", async Task<Results<Ok<PagedResult<TEntity>>, BadRequest<string>>> ([FromServices] TDbContext context, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
-                {
-                    const int maxPageSize = 100;
-                    if (page < 1)
-                    {
-                        return TypedResults.BadRequest("Page must be greater than or equal to 1.");
-                    }
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(GetListEndpoint, configure);
 
-                    if (pageSize < 1 || pageSize > maxPageSize)
-                    {
-                        return TypedResults.BadRequest($"PageSize must be between 1 and {maxPageSize}.");
-                    }
+        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(GetPagedEndpoint, configure);
 
-                    var query = context.Set<TEntity>().AsNoTracking();
-                    var list = await query
-                        .OrderBy(entity => entity.Id)
-                        .Skip((page - 1) * pageSize)
-                        .Take(pageSize)
-                        .ToListAsync();
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(CreateEndpoint, configure);
 
-                    var result = new PagedResult<TEntity>(list, await query.CountAsync(), page, pageSize);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(UpdateEndpoint, configure);
+    }
 
-                    return TypedResults.Ok(result);
-                });
+    public void ConfigureAll<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class
+    {
+        ConfigAll = CreateEndpointOptions(configure);
 
-                ExecuteOptions(builder, ConfigGetPaged);
-            }
-        }
+        GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TResponse>();
+        ConfigureEndpoint(GetByIdEndpoint, configure);
 
-        private void MapGetList(IEndpointRouteBuilder app)
-        {
-            if (ConfigGetList.Active)
-            {
-                var builder = app.MapGet("", async Task<Ok<List<TEntity>>> ([FromServices] TDbContext context) =>
-                {
-                    var list = await context.Set<TEntity>().ToListAsync();
-                    return TypedResults.Ok(list);
-                });
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TResponse>();
+        ConfigureEndpoint(GetListEndpoint, configure);
 
-                ExecuteOptions(builder, ConfigGetList);
-            }
-        }
+        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TResponse>();
+        ConfigureEndpoint(GetPagedEndpoint, configure);
 
-        private void MapGetById(IEndpointRouteBuilder app)
-        {
-            if (ConfigGetById.Active)
-            {
-                var builder = app.MapGet("/{id}", async Task<Results<Ok<TEntity>, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
-                {
-                    var entity = await context.Set<TEntity>().FindAsync(id);
-                    if (entity is null)
-                        return TypedResults.NotFound();
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>();
+        ConfigureEndpoint(CreateEndpoint, configure);
 
-                    return TypedResults.Ok(entity);
-                });
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TRequest>();
+        ConfigureEndpoint(UpdateEndpoint, configure);
+    }
 
-                ExecuteOptions(builder, ConfigGetById);
-            }
-        }
+    public void Get(Action<RouteHandlerBuilder>? configure = null) =>
+        ConfigureEndpoint(GetByIdEndpoint, configure);
 
-        private void MapPost(IEndpointRouteBuilder app)
-        {
-            if (ConfigPost.Active)
-            {
-                var builder = app.MapPost("", async Task<Created<TEntity>> ([FromBody] TEntity entity, [FromServices] TDbContext context) =>
-                {
-                    context.Set<TEntity>().Add(entity);
-                    await context.SaveChangesAsync();
-                    return TypedResults.Created($"/{entity.Id?.ToString()}", entity);
-                });
+    public void Get<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
+    {
+        GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(GetByIdEndpoint, configure);
+    }
 
-                ExecuteOptions(builder, ConfigPost);
-            }
-        }
+    public void GetList(Action<RouteHandlerBuilder>? configure = null) =>
+        ConfigureEndpoint(GetListEndpoint, configure);
 
-        private void MapPut(IEndpointRouteBuilder app)
-        {
-            if (ConfigPut.Active)
-            {
-                var builder = app.MapPut(
-                    "/{id}", 
-                    async Task<Results<NoContent, NotFound, BadRequest<string>>> (
-                        [FromRoute] TKey id, 
-                        [FromBody] TEntity updatedEntity, 
-                        [FromServices] TDbContext context) =>
-                {
-                    if (!EqualityComparer<TKey>.Default.Equals(id, updatedEntity.Id))
-                    {
-                        return TypedResults.BadRequest("Route id must match body id.");
-                    }
+    public void GetList<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
+    {
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(GetListEndpoint, configure);
+    }
 
-                    var entity = await context.Set<TEntity>().FindAsync(id);
-                    if (entity is null)
-                        return TypedResults.NotFound();
-                    context.Entry(entity).CurrentValues.SetValues(updatedEntity);
-                    await context.SaveChangesAsync();
-                    return TypedResults.NoContent();
-                });
+    public void GetPaged(Action<RouteHandlerBuilder>? configure = null) =>
+        ConfigureEndpoint(GetPagedEndpoint, configure);
 
-                ExecuteOptions(builder, ConfigPut);
-            }
-        }
+    public void GetPaged<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
+    {
+        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(GetPagedEndpoint, configure);
+    }
 
-        private void MapDelete(IEndpointRouteBuilder app)
-        {
-            if (ConfigDelete.Active)
-            {
-                var builder = app.MapDelete("/{id}", async Task<Results<NoContent, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
-                {
-                    var entity = await context.Set<TEntity>().FindAsync(id);
-                    if (entity is null)
-                    {
-                        return TypedResults.NotFound();
-                    }
+    public void Create(Action<RouteHandlerBuilder>? configure = null) =>
+        ConfigureEndpoint(CreateEndpoint, configure);
 
-                    context.Set<TEntity>().Remove(entity);
-                    await context.SaveChangesAsync();
-                    return TypedResults.NoContent();
-                });
+    public void Create<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
+    { 
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(CreateEndpoint, configure);
+    }
 
-                ExecuteOptions(builder, ConfigDelete);
-            }
-        }
+    public void Create<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class
+    {
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>();
+        ConfigureEndpoint(CreateEndpoint, configure);
+    }
+
+    public void Update(Action<RouteHandlerBuilder>? configure = null) =>
+        ConfigureEndpoint(UpdateEndpoint, configure);
+
+    public void Update<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
+    {
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>();
+        ConfigureEndpoint(UpdateEndpoint, configure);
+    }
+
+    public void Delete(Action<RouteHandlerBuilder>? configure = null) =>
+        ConfigureEndpoint(DeleteEndpoint, configure);
+
+    public void Map(RouteGroupBuilder group)
+    {
+        group = group.MapGroup(RoutePrefix);
+        ConfigGroup?.Invoke(group);
+
+        foreach (var endpoint in GetAllEndpoints())
+            endpoint.Map(group, ConfigAll);
     }
 }

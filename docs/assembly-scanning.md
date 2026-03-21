@@ -1,16 +1,13 @@
-# Descubrimiento por ensamblados / Assembly scanning
+# Assembly scanning
 
-[Volver al README / Back to README](../README.md)
+[Back to README](../README.md)
 
-## Índice / Index
+## Index
 
-- [Uso basico / Basic usage](basic-usage.md)
-- [Arquitectura modular / Modular architecture](architecture.md)
-- [Personalizacion / Customization](customization.md)
+- [Modular architecture](architecture.md)
+- [Customization](customization.md)
 
-**ES**: Si tus módulos están en un ensamblado diferente al de `Program.cs`, debes especificarlo.
-
-**EN**: If your modules live in a different assembly than `Program.cs`, you must specify it.
+If your modules live in a different assembly than `Program.cs`, you must specify it.
 
 ```csharp
 var assemblies = new[] { typeof(ProductsModule).Assembly };
