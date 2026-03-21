@@ -204,7 +204,6 @@ Each module is a self-contained unit: its routes, its DTOs, its custom endpoints
 ## Docs
 
 - [Modular architecture](docs/architecture.md)
-- [Basic usage](docs/basic-usage.md)
 - [Customization](docs/customization.md)
 - [Assembly scanning](docs/assembly-scanning.md)
 - [Roadmap](docs/roadmap.md)
