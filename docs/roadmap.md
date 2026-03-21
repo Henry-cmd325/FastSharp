@@ -5,7 +5,6 @@
 ## Index
 
 - [Modular architecture](architecture.md)
-- [Basic usage](basic-usage.md)
 - [Custom endpoints](customization.md#custom-endpoints)
 
 - [x] Use DTOs in generic endpoints
