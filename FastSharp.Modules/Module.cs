@@ -4,29 +4,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FastSharp.Modules;
 
-public abstract class Module<TDbContext> : IFastModule where TDbContext : DbContext
+public abstract class Module : IFastModule
 {
-    private readonly List<Type> _moduleEndpoints = [];
-    private readonly List<ICrudEndpoints<TDbContext>> _crudOptionsList = [];
-    private Action<RouteGroupBuilder>? _groupConfiguration;
-    private string urlPrefix = "/api";
-
+    protected readonly List<Type> _moduleEndpoints = [];
+    protected Action<RouteGroupBuilder>? _groupConfiguration;
+    protected string urlPrefix = "/api";
+    
     // This is implemented explicitly so the method cannot be called directly by consumers,
     // and can only be invoked by the FastSharp engine when building the Minimal APIs.
     void IFastModule.Map(IEndpointRouteBuilder app)
     {
+        MapEndpoints(app);
+    }
+
+    protected virtual void MapEndpoints(IEndpointRouteBuilder app)
+    {
         var group = app.MapGroup(urlPrefix);
-
         _groupConfiguration?.Invoke(group);
-
-        foreach (var crudOptions in _crudOptionsList)
-        {
-            crudOptions.Map(group);
-        }
-
         using var scope = app.ServiceProvider.CreateScope();
         var provider = scope.ServiceProvider;
-
         foreach (var endpointType in _moduleEndpoints)
         {
             var endpoint = (IEndpoint)provider.GetRequiredService(endpointType);
@@ -45,22 +41,6 @@ public abstract class Module<TDbContext> : IFastModule where TDbContext : DbCont
     {
         urlPrefix = prefix;
         _groupConfiguration = configure;
-    }
-
-    /// <summary>
-    /// Adds a set of CRUD endpoints for a specific entity.
-    /// Each endpoint (Get, GetList, GetPaged, Create, Update, Delete) can be configured individually,
-    /// or a shared configuration can be applied to the entire CRUD group.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type.</typeparam>
-    /// <typeparam name="TKey">The entity primary key type.</typeparam>
-    /// <param name="routePrefix">The route prefix for the CRUD endpoints.</param>
-    /// <param name="configure">An action that configures the CRUD endpoints.</param>
-    protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
-    {
-        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix);
-        configure?.Invoke(options);
-        _crudOptionsList.Add(options);
     }
 
     /// <summary>
@@ -101,5 +81,48 @@ public abstract class Module<TDbContext> : IFastModule where TDbContext : DbCont
     protected void Include<TEndpoint>() where TEndpoint : IEndpoint
     {
         _moduleEndpoints.Add(typeof(TEndpoint));
+    }
+}
+
+//Module with built-in support for CRUD endpoints based on Entity Framework Core DbContext.
+public abstract class Module<TDbContext> : Module where TDbContext : DbContext
+{
+    private readonly List<ICrudEndpoints<TDbContext>> _crudOptionsList = [];
+
+    protected override void MapEndpoints(IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup(urlPrefix);
+
+        _groupConfiguration?.Invoke(group);
+
+        foreach (var crudOptions in _crudOptionsList)
+        {
+            crudOptions.Map(group);
+        }
+
+        using var scope = app.ServiceProvider.CreateScope();
+        var provider = scope.ServiceProvider;
+
+        foreach (var endpointType in _moduleEndpoints)
+        {
+            var endpoint = (IEndpoint)provider.GetRequiredService(endpointType);
+            endpoint.Map(group);
+        }
+    }
+
+    /// <summary>
+    /// Adds a set of CRUD endpoints for a specific entity.
+    /// Each endpoint (Get, GetList, GetPaged, Create, Update, Delete) can be configured individually,
+    /// or a shared configuration can be applied to the entire CRUD group.
+    /// </summary>
+    /// <typeparam name="TEntity">The entity type.</typeparam>
+    /// <typeparam name="TKey">The entity primary key type.</typeparam>
+    /// <param name="routePrefix">The route prefix for the CRUD endpoints.</param>
+    /// <param name="configure">An action that configures the CRUD endpoints.</param>
+    protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
+    {
+        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix);
+        configure?.Invoke(options);
+        _crudOptionsList.Add(options);
     }
 }

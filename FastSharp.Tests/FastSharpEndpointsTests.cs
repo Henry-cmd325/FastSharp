@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using System.Net;
 using System.Net.Http.Json;
 using Xunit;
@@ -42,6 +43,18 @@ public class FastSharpEndpointsTests
         using var scope = provider.CreateScope();
         Assert.NotNull(scope.ServiceProvider.GetService(typeof(SampleModule)));
         Assert.NotNull(scope.ServiceProvider.GetService(typeof(PingEndpoint)));
+    }
+
+    [Fact]
+    public void AddFastSharpEndpoints_RegistersModuleWithoutContext()
+    {
+        var services = new ServiceCollection();
+        services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
+        var provider = services.BuildServiceProvider();
+
+        using var scope = provider.CreateScope();
+        Assert.NotNull(scope.ServiceProvider.GetService(typeof(NoContextModule)));
+        Assert.NotNull(scope.ServiceProvider.GetService(typeof(NoContextPingEndpoint)));
     }
 
     [Fact]
@@ -143,6 +156,33 @@ public class FastSharpEndpointsTests
 
         var ungroupedResponse = await client.GetAsync("/api/items");
         Assert.Equal(HttpStatusCode.NotFound, ungroupedResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_ModuleWithoutContext_MapsCustomEndpointOnly()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var pingResponse = await client.GetAsync("/api/nocontext/ping");
+        Assert.Equal(HttpStatusCode.OK, pingResponse.StatusCode);
+        Assert.Equal("pong-no-context", await pingResponse.Content.ReadAsStringAsync());
+
+        var getResponse = await client.GetAsync("/api/nocontext");
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+
+        var postResponse = await client.PostAsJsonAsync("/api/nocontext", new { Id = 1 });
+        Assert.Equal(HttpStatusCode.NotFound, postResponse.StatusCode);
+    }
+
+    [Fact]
+    public void ModuleWithoutContext_DoesNotExposeGenericCrudSupport()
+    {
+        var nonGenericModuleMethods = typeof(FastSharp.Modules.Module)
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(method => method.Name == "AddCRUD");
+
+        Assert.Empty(nonGenericModuleMethods);
     }
 
     [Fact]
