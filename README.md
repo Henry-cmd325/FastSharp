@@ -5,7 +5,7 @@
 [![Publish NuGet packages](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml/badge.svg)](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml)
 [![Stars](https://img.shields.io/github/stars/Henry-cmd325/FastSharp?logo=github&style=flat)](https://github.com/Henry-cmd325/FastSharp)
 
-**FastSharp** is a lightweight metaframework for building APIs in C# and ASP.NET Core (Minimal APIs). Full CRUDs and custom endpoints, organized by domain modules, in a single line of code.
+**FastSharp** is a lightweight library for building APIs in C# and ASP.NET Core (Minimal APIs). Full CRUDs and custom endpoints, organized by domain modules, in a single line of code.
 
 ---
 
