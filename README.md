@@ -169,6 +169,20 @@ public ProductsModule()
 }
 ```
 
+```csharp
+public class CheckProductStock : IEndpoint
+{
+    public void Map(RouteGroupBuilder app)
+    {
+        app.MapGet("/{id}/stock", async ([FromRoute] int id) =>
+        {
+            return Results.Ok($"Checking stock for product {id}");
+        })
+        .WithTags("prueba");
+    }
+}
+```
+
 ---
 
 ## Architecture
