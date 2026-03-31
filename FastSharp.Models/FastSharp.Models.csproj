@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
     <Title>FastSharp.Models</Title>
     <Description>FastSharp: Convention-over-configuration CRUDs and modular endpoints for .NET Minimal APIs. Build faster, keep it clean.</Description>
     <PackageIcon>Gemini_Generated_Image_52oeva52oeva52oe.png</PackageIcon>
