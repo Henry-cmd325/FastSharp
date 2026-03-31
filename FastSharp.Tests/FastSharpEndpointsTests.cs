@@ -281,4 +281,39 @@ public class FastSharpEndpointsTests
         Assert.NotNull(model);
         Assert.Equal("DTO Updated", model!.Name);
     }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_IdSelectorModule()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/id-selector", new TestModel { Id = 60, Name = "DTO Name" });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var getResponse = await client.GetAsync("/api/id-selector/60");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+
+        var getBody = await getResponse.Content.ReadAsStringAsync();
+
+        var listResponse = await client.GetAsync("/api/id-selector");
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        var listBody = await listResponse.Content.ReadAsStringAsync();
+
+        var pagedResponse = await client.GetAsync("/api/id-selector/paged?page=1&pageSize=10");
+        Assert.Equal(HttpStatusCode.OK, pagedResponse.StatusCode);
+        var pagedResult = await pagedResponse.Content.ReadFromJsonAsync<PagedResult<TestModel>>();
+        Assert.NotNull(pagedResult);
+        Assert.Contains(pagedResult!.Items, item => item.Id == 60);
+
+        var updateResponse = await client.PutAsJsonAsync("/api/id-selector/60", new TestModel { Id = 60, Name = "DTO Updated" });
+        Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
+
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+        var model = await context.Models.FindAsync(60);
+
+        Assert.NotNull(model);
+        Assert.Equal("DTO Updated", model!.Name);
+    }
 }

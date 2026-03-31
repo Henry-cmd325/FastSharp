@@ -1,5 +1,4 @@
-﻿using FastSharp.Models;
-using FastSharp.Modules.Configuration;
+﻿using FastSharp.Modules.Configuration;
 using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FastSharp.Modules.Endpoints;
 
 public class GetListEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
-    where TEntity : class, IModel<TKey>
+    where TEntity : class
     where TDbContext : DbContext
 {
     protected EndpointOptions _options = new();
@@ -35,7 +34,7 @@ public class GetListEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
 }
 
 public class GetListEndpoint<TDbContext, TEntity, TKey, TDto> : GetListEndpoint<TDbContext, TEntity, TKey>
-    where TEntity : class, IModel<TKey>
+    where TEntity : class
     where TDbContext : DbContext
     where TDto : class
 {

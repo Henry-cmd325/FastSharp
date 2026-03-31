@@ -4,14 +4,16 @@ using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace FastSharp.Modules.Endpoints;
 
-public class GetPagedEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
-    where TEntity : class, IModel<TKey>
+public class GetPagedEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntity, TKey>> idSelector) : IGenericEndpoint
+    where TEntity : class
     where TDbContext : DbContext
 {
     protected EndpointOptions _options = new();
+    protected Expression<Func<TEntity, TKey>> IdSelector = idSelector;
 
     public void Configure(EndpointOptions options)
     {
@@ -40,7 +42,7 @@ public class GetPagedEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
 
                 var query = context.Set<TEntity>().AsNoTracking();
                 var list = await query
-                    .OrderBy(entity => entity.Id)
+                    .OrderBy(IdSelector)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -55,8 +57,8 @@ public class GetPagedEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
 }
 
 //With DTO
-public class GetPagedEndpoint<TDbContext, TEntity, TKey, TDto> : GetPagedEndpoint<TDbContext, TEntity, TKey>
-    where TEntity : class, IModel<TKey>
+public class GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>(Expression<Func<TEntity, TKey>> idSelector) : GetPagedEndpoint<TDbContext, TEntity, TKey>(idSelector)
+    where TEntity : class
     where TDbContext : DbContext
     where TDto : class
 {
@@ -82,7 +84,7 @@ public class GetPagedEndpoint<TDbContext, TEntity, TKey, TDto> : GetPagedEndpoin
 
                 var query = context.Set<TEntity>().AsNoTracking();
                 var list = await query
-                    .OrderBy(entity => entity.Id)
+                    .OrderBy(IdSelector)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ProjectToType<TDto>()

@@ -1,6 +1,7 @@
-﻿using FastSharp.Modules.Configuration;
-using FastSharp.Models;
+﻿using FastSharp.Models;
+using FastSharp.Modules.Configuration;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace FastSharp.Modules;
 
@@ -122,6 +123,26 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
     protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
     {
         var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix);
+        configure?.Invoke(options);
+        _crudOptionsList.Add(options);
+    }
+
+    /// <summary>
+    /// Adds a set of CRUD endpoints for a specific entity, with a custom primary key selector.
+    /// Each endpoint (Get, GetList, GetPaged, Create, Update, Delete) can be configured individually,
+    /// or a shared configuration can be applied to the entire CRUD group.
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TKey"></typeparam>
+    /// <param name="routePrefix"></param>
+    /// <param name="idSelector"></param>
+    /// <param name="configure"></param>
+    protected void AddCRUD<TEntity, TKey>(
+    string routePrefix,
+    Expression<Func<TEntity, TKey>> idSelector,
+    Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class
+    {
+        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix, idSelector);
         configure?.Invoke(options);
         _crudOptionsList.Add(options);
     }
