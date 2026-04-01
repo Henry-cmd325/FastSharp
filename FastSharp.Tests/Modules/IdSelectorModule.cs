@@ -7,7 +7,7 @@ namespace FastSharp.Tests.Modules
     {
         public IdSelectorModule()
         {
-            AddCRUD<TestModel, int>("/id-selector", t => t.Id);
+            AddCRUD<TestModelWitoutInterface, int>("/id-selector", t => t.Id);
         }
     }
 }

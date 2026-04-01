@@ -8,3 +8,9 @@ public sealed class TestModel : IModel<int>
     public string? Name { get; set; }
 }
 
+public sealed class TestModelWitoutInterface
+{
+    public int Id { get; set; }
+    public string? Name { get; set; }
+}
+
