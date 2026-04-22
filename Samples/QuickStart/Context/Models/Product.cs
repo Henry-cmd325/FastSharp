@@ -11,6 +11,4 @@ public partial class Product : IModel<int>
     public double Price { get; set; }
 
     public string Description { get; set; } = null!;
-
-    public virtual Stock? Stock { get; set; }
 }

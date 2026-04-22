@@ -21,7 +21,7 @@ public class GetListEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
     {
         if (_options.Active)
         {
-            var builder = app.MapGet("", async Task<Ok<List<TEntity>>> ([FromServices] TDbContext context) =>
+            var builder = app.MapGet("/", async Task<Ok<List<TEntity>>> ([FromServices] TDbContext context) =>
             {
                 var list = await context.Set<TEntity>().ToListAsync();
                 return TypedResults.Ok(list);
@@ -42,7 +42,7 @@ public class GetListEndpoint<TDbContext, TEntity, TKey, TDto> : GetListEndpoint<
     {
         if (_options.Active)
         {
-            var builder = app.MapGet("", async Task<Ok<List<TDto>>> ([FromServices] TDbContext context) =>
+            var builder = app.MapGet("/", async Task<Ok<List<TDto>>> ([FromServices] TDbContext context) =>
             {
                 var list = await context.Set<TEntity>()
                     .AsNoTracking()

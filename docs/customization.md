@@ -6,7 +6,7 @@
 
 - [Modular architecture](architecture.md)
 
-Customization of CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route and the second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
+Customization of CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route (use a **leading slash**, e.g. `"/products"`). The second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
 
 To configure the module base group (applying options to all endpoints in the group), use `ConfigureModule`. This lets you add metadata or policies at the group level.
 
@@ -20,10 +20,8 @@ public class ProductsModule : Module<YourDbContext>
 {
     public ProductsModule()
     {
-        ConfigureModule(module =>
-        {
-            module.WithDescription("Endpoints for managing products in the inventory");
-        });
+        ConfigureModule("/api", module => module
+            .WithDescription("Endpoints for managing products in the inventory"));
 
         AddCRUD<Product, int>("/products", crud =>
         {
@@ -31,10 +29,8 @@ public class ProductsModule : Module<YourDbContext>
             crud.DisableEndpoint(GenericEndpoint.GetList);
 
             // Example 2: Apply metadata to all CRUD endpoints
-            crud.ConfigureAll(endpoints =>
-            {
-                endpoints.WithDescription("Products CRUD endpoint");
-            });
+            crud.ConfigureAll(endpoints => endpoints
+                .WithDescription("Products CRUD endpoint"));
         });
     }
 }
@@ -49,10 +45,8 @@ The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `GetPaged`, `Creat
 ## 1) Single DTO for all CRUD endpoints
 
 ```csharp
-AddCRUD<Product, int>("/products", crud =>
-{
-    crud.ConfigureAll<ProductDto>();
-});
+AddCRUD<Product, int>("/products", crud => crud
+    .ConfigureAll<ProductDto>());
 ```
 
 Resulting contracts:
@@ -65,10 +59,8 @@ Resulting contracts:
 ## 2) Separate write/read DTOs
 
 ```csharp
-AddCRUD<Product, int>("/products", options =>
-{
-    options.ConfigureAll<ProductWriteDto, ProductReadDto>();
-});
+AddCRUD<Product, int>("/products", options => options
+    .ConfigureAll<ProductWriteDto, ProductReadDto>());
 ```
 
 Resulting contracts:
@@ -130,4 +122,4 @@ public class ProductsModule : Module<YourDbContext>
 }
 ```
 
-This will result in a new endpoint: `GET /api/products/{id}/stock`.
+This will result in a new endpoint such as `GET /api/{id}/stock` (relative to your module prefix from `ConfigureModule`; the default module prefix is `/api` when you do not call `ConfigureModule`).

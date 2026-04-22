@@ -82,7 +82,7 @@ public class InventoryModule : Module<YourDbContext>
 {
     public InventoryModule()
     {
-        ConfigureModule(module =>
+        ConfigureModule("/api/inventory", module =>
         {
             module.WithTags("Inventory")
                  .WithDescription("Inventory domain endpoints");
@@ -103,7 +103,7 @@ public class InventoryModule : Module<YourDbContext>
 ```mermaid
 graph TD
     subgraph "Inventory Module"
-        D[Module Configuration] -->|Configures| G[Route Group '/inventory']
+        D[Module Configuration] -->|Configures| G[Route Group '/api/inventory']
         
         G --> C1[CRUD: Products]
         G --> C2[CRUD: Categories]

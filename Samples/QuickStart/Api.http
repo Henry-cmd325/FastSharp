@@ -1,0 +1,108 @@
+@Api_HostAddress = http://localhost:5191
+@productId = 1
+@alternativeProductId = 2
+
+### OpenAPI document
+GET {{Api_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+### Products - create
+POST {{Api_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "id": {{productId}},
+  "name": "Keyboard",
+  "price": 49.99,
+  "description": "Mechanical keyboard"
+}
+
+###
+
+### Products - get paged
+GET {{Api_HostAddress}}/api/products/paged?page=1&pageSize=10
+Accept: application/json
+
+###
+
+### Products - get list
+GET {{Api_HostAddress}}/api/products
+Accept: application/json
+
+###
+
+### Products - get by id
+GET {{Api_HostAddress}}/api/products/{{productId}}
+Accept: application/json
+
+###
+
+### Products - update
+PUT {{Api_HostAddress}}/api/products/{{productId}}
+Content-Type: application/json
+
+{
+  "id": {{productId}},
+  "name": "Keyboard Pro",
+  "price": 79.99,
+  "description": "Mechanical keyboard with RGB"
+}
+
+###
+
+### Products - delete
+DELETE {{Api_HostAddress}}/api/products/{{productId}}
+Accept: application/json
+
+###
+
+### Alternative products - create
+POST {{Api_HostAddress}}/api/products/alternative
+Content-Type: application/json
+
+{
+  "name": "Mouse",
+  "price": 29.99,
+  "description": "Wireless mouse"
+}
+
+###
+
+### Alternative products - get paged
+GET {{Api_HostAddress}}/api/products/alternative/paged?page=1&pageSize=10
+Accept: application/json
+
+###
+
+### Alternative products - get by id
+GET {{Api_HostAddress}}/api/products/alternative/{{alternativeProductId}}
+Accept: application/json
+
+###
+
+### Alternative products - update
+PUT {{Api_HostAddress}}/api/products/alternative/{{alternativeProductId}}
+Content-Type: application/json
+
+{
+  "id": {{alternativeProductId}},
+  "name": "Mouse Pro",
+  "price": 39.99,
+  "description": "Wireless mouse with rechargeable battery"
+}
+
+###
+
+### Alternative products - delete
+DELETE {{Api_HostAddress}}/api/products/alternative/{{alternativeProductId}}
+Accept: application/json
+
+###
+
+### Custom endpoint - check product stock
+GET {{Api_HostAddress}}/api/{{productId}}/stock
+Accept: application/json
+
+###

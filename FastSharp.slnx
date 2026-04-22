@@ -1,5 +1,9 @@
 <Solution>
+  <Folder Name="/Actions/">
+    <File Path=".github/workflows/nuget-publish.yml" />
+  </Folder>
   <Folder Name="/Elementos de la solución/">
+    <File Path=".github/copilot-instructions.md" />
     <File Path=".gitignore" />
     <File Path="Gemini_Generated_Image_52oeva52oeva52oe.png" />
     <File Path="LICENSE" />
@@ -10,8 +14,9 @@
     <File Path="docs/customization.md" />
     <File Path="docs/roadmap.md" />
   </Folder>
-  <Folder Name="/Samples/">
-    <Project Path="Samples/Api/Api.csproj" />
+  <Folder Name="/Samples/" />
+  <Folder Name="/Samples/QuickStart/">
+    <Project Path="Samples/QuickStart/Api.csproj" />
   </Folder>
   <Project Path="FastSharp.Models/FastSharp.Models.csproj" />
   <Project Path="FastSharp.Modules/FastSharp.Modules.csproj" />

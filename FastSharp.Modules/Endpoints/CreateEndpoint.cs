@@ -22,7 +22,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(Func<TEntity, TKey> getId
     {
         if (_options.Active)
         {
-            var builder = app.MapPost("", async Task<Created<TEntity>> ([FromBody] TEntity entity, [FromServices] TDbContext context) =>
+            var builder = app.MapPost("/", async Task<Created<TEntity>> ([FromBody] TEntity entity, [FromServices] TDbContext context) =>
             {
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
@@ -48,7 +48,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TEntity, TKey>
     {
         if (_options.Active)
         {
-            var builder = app.MapPost("", async Task<Created<TDto>> ([FromBody] TDto dto, [FromServices] TDbContext context) =>
+            var builder = app.MapPost("/", async Task<Created<TDto>> ([FromBody] TDto dto, [FromServices] TDbContext context) =>
             {
                 var entity = dto.Adapt<TEntity>();
                 context.Set<TEntity>().Add(entity);
@@ -74,7 +74,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(Func
     {
         if (_options.Active)
         {
-            var builder = app.MapPost("", async Task<Created<TResponse>> ([FromBody] TRequest request, [FromServices] TDbContext context) =>
+            var builder = app.MapPost("/", async Task<Created<TResponse>> ([FromBody] TRequest request, [FromServices] TDbContext context) =>
             {
                 var entity = request.Adapt<TEntity>();
                 context.Set<TEntity>().Add(entity);

@@ -34,8 +34,7 @@ public abstract class Module : IFastModule
     /// <summary>
     /// Configures the routing module with a specified URL prefix and a configuration action for the route group.
     /// </summary>
-    /// <param name="prefix">The URL prefix to apply to the route group. This prefix is used as the base path for all routes defined
-    /// within the module.</param>
+    /// <param name="prefix">The URL prefix to apply to the route group (use a leading slash, e.g. <c>"/api"</c>). This prefix is the base path for all routes defined within the module.</param>
     /// <param name="configure">An action that configures the route group. Use this action to define routes and additional settings within
     /// the specified prefix.</param>
     protected void ConfigureModule(string prefix, Action<RouteGroupBuilder> configure)
@@ -118,7 +117,7 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
     /// </summary>
     /// <typeparam name="TEntity">The entity type.</typeparam>
     /// <typeparam name="TKey">The entity primary key type.</typeparam>
-    /// <param name="routePrefix">The route prefix for the CRUD endpoints.</param>
+    /// <param name="routePrefix">The route prefix for the CRUD endpoints (use a leading slash, e.g. <c>"/products"</c> or <c>"/products/v2"</c>).</param>
     /// <param name="configure">An action that configures the CRUD endpoints.</param>
     protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
     {
@@ -134,9 +133,9 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
     /// </summary>
     /// <typeparam name="TEntity"></typeparam>
     /// <typeparam name="TKey"></typeparam>
-    /// <param name="routePrefix"></param>
-    /// <param name="idSelector"></param>
-    /// <param name="configure"></param>
+    /// <param name="routePrefix">The route prefix for the CRUD endpoints (use a leading slash, e.g. <c>"/products"</c>).</param>
+    /// <param name="idSelector">Expression that selects the entity's primary key.</param>
+    /// <param name="configure">An action that configures the CRUD endpoints.</param>
     protected void AddCRUD<TEntity, TKey>(
     string routePrefix,
     Expression<Func<TEntity, TKey>> idSelector,

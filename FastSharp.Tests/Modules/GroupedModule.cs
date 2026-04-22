@@ -9,7 +9,7 @@ namespace FastSharp.Tests.Modules
         public GroupedModule()
         {
             ConfigureModule("/api/grouped", opt => opt.WithTags("grouped"));
-            AddCRUD<TestModel, int>("items");
+            AddCRUD<TestModel, int>("/items");
         }
     }
 }

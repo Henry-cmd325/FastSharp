@@ -5,7 +5,7 @@
 [![Publish NuGet packages](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml/badge.svg)](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml)
 [![Stars](https://img.shields.io/github/stars/Henry-cmd325/FastSharp?logo=github&style=flat)](https://github.com/Henry-cmd325/FastSharp)
 
-**FastSharp** is a lightweight library for building APIs in C# and ASP.NET Core (Minimal APIs). Full CRUDs and custom endpoints, organized by domain modules, in a single line of code.
+**FastSharp** is a lightweight library for building APIs in C# and ASP.NET Core (Minimal APIs). You still define your entities, `DbContext`, and a small module class — but each CRUD surface is registered in **one line** (`AddCRUD`), with optional DTOs and per-endpoint tweaks.
 
 ---
 
@@ -14,8 +14,8 @@
 In ASP.NET Core Minimal APIs, even a simple CRUD for one entity means writing the same boilerplate over and over. FastSharp eliminates that:
 
 ```csharp
-// This single line generates 6 REST endpoints backed by EF Core
-AddCRUD<Product, int>("products");
+// Inside a module constructor, one call maps 6 REST endpoints backed by EF Core
+AddCRUD<Product, int>("/products");
 ```
 
 No controllers. No repetition. Just modules organized by domain.
@@ -35,7 +35,7 @@ dotnet add package FastSharp.Models
 
 ## Quick Start
 
-The minimum setup requires 4 files. This example uses an in-memory database so you can run it immediately.
+The minimum setup is **four code files** (steps 2–5 below) plus package restore. This example uses an in-memory database so you can run it immediately.
 
 **1. Install the dependencies**
 ```bash
@@ -61,12 +61,12 @@ public class Product : IModel<int>
 **3. Your DbContext**
 
 ```csharp
-// Data/AppDbContext.cs
+// Data/ApiDbContext.cs
 using Microsoft.EntityFrameworkCore;
 
-public class AppDbContext : DbContext
+public class ApiDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public ApiDbContext(DbContextOptions<ApiDbContext> options) : base(options) { }
     public DbSet<Product> Products => Set<Product>();
 }
 ```
@@ -75,16 +75,50 @@ public class AppDbContext : DbContext
 
 ```csharp
 // Modules/Products/ProductsModule.cs
+using yourproject.Context;
+using yourproject.Context.Models;
+using yourproject.Modules.Products.Dtos;
+using yourproject.Modules.Products.Endpoints;
 using FastSharp.Modules;
+using FastSharp.Modules.Configuration;
 
-public class ProductsModule : Module<AppDbContext>
+namespace yourproject.Modules.Products;
+
+public class ProductsModule : Module<ApiDbContext>
 {
     public ProductsModule()
     {
-        ConfigureModule("api/", module => module.WithTags("Products"));
-        AddCRUD<Product, int>("products");
+        ConfigureModule("/api", opt => opt
+            .WithTags("Productos")
+            .WithDescription("Endpoints of products module")
+        );
+
+        // Simplest way: Automatically maps all standard CRUD operations to ProductDto.
+        // If your model implements IModel, FastSharp handles the Id selection automatically.
+        AddCRUD<Product, int>("/products", crud => crud.ConfigureAll<ProductDto>());
+        
+        // Advanced: Full control over each endpoint.
+        // You can pass a manual Id selector (p => p.Id) for existing models that don't implement IModel.
+        AddCRUD<Product, int>("/products/alternative", p => p.Id, crud =>
+        {
+            crud.DisableEndpoint(GenericEndpoint.GetList);
+            
+            crud.GetPaged<ProductDto>((endpoint) => endpoint
+                .WithDescription("Retrieves a paginated list of products")
+                .WithTags("GetPaged")
+            );
+
+            crud.Create<ProductRequest, ProductDto>((endpoint) => endpoint
+                .WithDescription("Creates a new product")
+                .WithTags("Create")
+            );
+        });
+
+        // You can also include custom endpoints in the module.
+        //Include<CheckProductStock>();
     }
 }
+
 ```
 
 **5. Program.cs**
@@ -95,7 +129,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(opt =>
+builder.Services.AddDbContext<ApiDbContext>(opt =>
     opt.UseInMemoryDatabase("fastsharp-demo"));
 
 builder.Services.AddFastSharpEndpoints();
@@ -108,6 +142,10 @@ app.Run();
 ```
 
 Run the project and open `/openapi/v1.json` — you'll see all 6 endpoints ready to use.
+
+> **Module discovery:** With no arguments, `AddFastSharpEndpoints()` and `MapFastSharpEndpoints()` scan the **calling assembly** (typically the project that contains `Program.cs`). If your modules live in another class library, pass that assembly explicitly. See [Assembly scanning](docs/assembly-scanning.md).
+
+> **OpenAPI UI:** The snippet above exposes the OpenAPI document only. For Swagger UI in Development (like the repo sample), add `Swashbuckle` or your preferred UI and call `MapOpenApi` / UI middleware where appropriate.
 
 ---
 
@@ -122,6 +160,8 @@ Run the project and open `/openapi/v1.json` — you'll see all 6 endpoints ready
 | `PUT` | `/api/products/{id}` | Update |
 | `DELETE` | `/api/products/{id}` | Delete |
 
+Paths use the module prefix from `ConfigureModule` (these examples use `/api`) plus the `AddCRUD` route prefix (here, `/products`). **Convention:** pass a leading slash on every path you own (`ConfigureModule`, `AddCRUD`, and custom `MapGet` / `MapPost` templates) so routes stay consistent across modules and the library.
+
 ---
 
 ## Configuration
@@ -129,7 +169,7 @@ Run the project and open `/openapi/v1.json` — you'll see all 6 endpoints ready
 **Disable specific endpoints**
 
 ```csharp
-AddCRUD<Product, int>("products", crud =>
+AddCRUD<Product, int>("/products", crud =>
 {
     crud.DisableEndpoint(GenericEndpoint.GetList);
 });
@@ -138,7 +178,7 @@ AddCRUD<Product, int>("products", crud =>
 **Use DTOs**
 
 ```csharp
-AddCRUD<Product, int>("products", crud =>
+AddCRUD<Product, int>("/products", crud =>
 {
     crud.Update<ProductDto>();
     // Or apply DTOs to all endpoints:
@@ -149,7 +189,7 @@ AddCRUD<Product, int>("products", crud =>
 **Add metadata for OpenAPI**
 
 ```csharp
-AddCRUD<Product, int>("products", crud =>
+AddCRUD<Product, int>("/products", crud =>
 {
     crud.Get(endpoint =>
         endpoint.WithDescription("Get a product by its unique identifier"));
@@ -161,10 +201,9 @@ AddCRUD<Product, int>("products", crud =>
 ```csharp
 public ProductsModule()
 {
-    ConfigureModule("api/", module => module.WithTags("Products"));
-    AddCRUD<Product, int>("products");
+    ConfigureModule("/api", module => module.WithTags("Products"));
+    AddCRUD<Product, int>("/products");
 
-    // Custom endpoints inherit the module's group configuration
     Include<CheckProductStock>();
 }
 ```
@@ -182,6 +221,8 @@ public class CheckProductStock : IEndpoint
     }
 }
 ```
+
+Custom `IEndpoint` types are mapped on the **module route group** (the `ConfigureModule` prefix), not nested under each `AddCRUD` prefix. With `/api` as the module prefix, `MapGet("/{id}/stock", ...)` becomes **`GET /api/{id}/stock`**, alongside **`GET /api/products`**, **`GET /api/products/{id}`**, etc. They still share group-level OpenAPI metadata from `ConfigureModule`.
 
 ---
 
@@ -201,7 +242,7 @@ YourProject/
         └── OrderDto.cs
 ```
 
-Each module is a self-contained unit: its routes, its DTOs, its custom endpoints. FastSharp auto-discovers all modules in your assembly — no manual registration needed.
+Each module is a self-contained unit: its routes, its DTOs, its custom endpoints. At startup, FastSharp registers every concrete `IFastModule` and `IEndpoint` type found in the assemblies you pass to `AddFastSharpEndpoints` / `MapFastSharpEndpoints` (default: the calling assembly only). There is no manual “register this module” list beyond that scan.
 
 ---
 
@@ -210,7 +251,7 @@ Each module is a self-contained unit: its routes, its DTOs, its custom endpoints
 - .NET 10 or higher
 - Entity Framework Core
 - A registered `DbContext` in the dependency container
-- Models implementing `IModel<TId>`
+- Entities used with the **parameterless** `AddCRUD<TEntity, TKey>(...)` overload must implement `IModel<TId>` (or use the overload that takes an **id selector** expression for plain POCOs)
 - Modules inheriting from `Module<TDbContext>`
 
 ---
