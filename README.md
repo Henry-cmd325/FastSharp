@@ -265,6 +265,20 @@ Each module is a self-contained unit: its routes, its DTOs, its custom endpoints
 
 ---
 
+## Minimal APIs, EF Core, and Mapster
+
+FastSharp registers routes using the same building blocks as **ASP.NET Core Minimal APIs** (`MapGet`, `MapGroup`, route handlers, OpenAPI metadata, etc.). You do not need to be an expert to use the built-in CRUD conventions, but anything beyond that (custom `IEndpoint` handlers, policies, filters, or fine-grained OpenAPI) is easier if you already know how Minimal APIs work.
+
+The generic CRUD endpoints run on **Entity Framework Core**: they use your `DbContext`, `DbSet<T>`, LINQ queries, and `SaveChangesAsync` under the hood. Understanding EF Core basics (configuring the context, change tracking, relationships, and migrations in real apps) helps when your entities are more than simple tables.
+
+When you use DTOs (`ConfigureAll`, per-endpoint generic types, etc.), FastSharp uses **Mapster** to map between entities and DTOs (for example `Adapt<T>()`). Customizing those mappings (flattening, ignoring members, global settings) follows Mapster’s configuration model.
+
+- [Minimal APIs overview](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis) — Microsoft Learn  
+- [Entity Framework Core documentation](https://learn.microsoft.com/en-us/ef/core/) — Microsoft Learn  
+- [Mapster wiki](https://github.com/MapsterMapper/Mapster/wiki) — GitHub
+
+---
+
 ## License
 
 MIT
