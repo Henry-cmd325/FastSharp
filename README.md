@@ -5,13 +5,26 @@
 [![Publish NuGet packages](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml/badge.svg)](https://github.com/Henry-cmd325/FastSharp/actions/workflows/nuget-publish.yml)
 [![Stars](https://img.shields.io/github/stars/Henry-cmd325/FastSharp?logo=github&style=flat)](https://github.com/Henry-cmd325/FastSharp)
 
-**FastSharp** is a lightweight library for building APIs in C# and ASP.NET Core (Minimal APIs). You still define your entities, `DbContext`, and a small module class — but each CRUD surface is registered in **one line** (`AddCRUD`), with optional DTOs and per-endpoint tweaks.
+**FastSharp** is a lightweight library for building APIs in C# and ASP.NET Core (Minimal APIs).
+
+It organizes your application using **Modules (contracts)** and **Endpoints (implementations)**, so you can structure your API by domain instead of technical layers.  
+You can also generate full CRUD endpoints in one line — but that's optional.
 
 ---
 
 ## Why FastSharp?
 
-In ASP.NET Core Minimal APIs, even a simple CRUD for one entity means writing the same boilerplate over and over. FastSharp eliminates that:
+Minimal APIs are flexible, but as your project grows they often become:
+
+- Repetitive  
+- Unstructured  
+- Hard to scale  
+
+FastSharp solves this with a simple model:
+
+- **Modules** → define the route group and API contract  
+- **Endpoints (`IEndpoint`)** → implement behavior as independent classes  
+- **`AddCRUD`** → optional shortcut for standard REST operations  
 
 ```csharp
 // Inside a module constructor, one call maps 6 REST endpoints backed by EF Core
@@ -36,6 +49,8 @@ dotnet add package FastSharp.Models
 ## Quick Start
 
 The minimum setup is **four code files** (steps 2–5 below) plus package restore. This example uses an in-memory database so you can run it immediately.
+
+> 🧠 **Need help choosing a project structure?** See [How to FastSharp](how-to-fastsharp.md) for the recommended ways to organize a FastSharp application as it grows.
 
 **1. Install the dependencies**
 ```bash
@@ -114,14 +129,30 @@ public class ProductsModule : Module<ApiDbContext>
             );
         });
 
-        // You can also include custom endpoints in the module.
+        // Declare custom endpoints for this module (implemented via IEndpoint)
         //Include<CheckProductStock>();
     }
 }
 
 ```
 
-**5. Program.cs**
+**5. Custom Endpoint**
+
+```csharp
+public class CheckProductStock : IEndpoint
+{
+    public void Map(RouteGroupBuilder app)
+    {
+        app.MapGet("/{id}/stock", async ([FromRoute] int id) =>
+        {
+            return Results.Ok($"Checking stock for product {id}");
+        })
+        .WithTags("prueba");
+    }
+}
+```
+
+**6. Program.cs**
 
 ```csharp
 using FastSharp.Modules;
@@ -142,6 +173,42 @@ app.Run();
 ```
 
 Run the project and open `/openapi/v1.json` — you'll see all 6 endpoints ready to use.
+
+## 🧠 Usage Modes
+
+FastSharp can be used in different ways depending on your needs:
+
+> Want guidance on when to keep everything in one project and when to split into assemblies? Read [How to FastSharp](how-to-fastsharp.md).
+
+1. CRUD-only (fastest)
+```csharp
+AddCRUD<Product, int>("/products");
+```
+2. CRUD + custom endpoints
+```csharp
+AddCRUD<Product, int>("/products");
+Include<CheckProductStock>();
+```
+
+3. Custom endpoints only (no persistence required)
+You can create modules without relying on EF Core and define only IEndpoint implementations.
+
+---
+
+## 🆚 FastSharp vs FastEndpoints
+
+FastEndpoints focuses on building endpoints with a structured and opinionated approach.
+
+FastSharp takes a different approach:
+
+- Organizes APIs around **modules (domains)** instead of individual endpoints  
+- Treats endpoints as **implementations inside a module**  
+- Provides **optional CRUD generation** for common cases  
+- Stays closer to **Minimal APIs**, with less framework overhead  
+
+If you prefer explicit modular architecture with lightweight abstractions, FastSharp aims to provide that balance.
+
+---
 
 > **Module discovery:** With no arguments, `AddFastSharpEndpoints()` and `MapFastSharpEndpoints()` scan the **calling assembly** (typically the project that contains `Program.cs`). If your modules live in another class library, pass that assembly explicitly. See [Assembly scanning](docs/assembly-scanning.md).
 

@@ -13,6 +13,7 @@
     <File Path="docs/architecture.md" />
     <File Path="docs/customization.md" />
     <File Path="docs/roadmap.md" />
+    <File Path="how-to-fastsharp.md" />
   </Folder>
   <Folder Name="/Samples/" />
   <Folder Name="/Samples/QuickStart/">

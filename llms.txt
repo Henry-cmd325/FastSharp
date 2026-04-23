@@ -1,40 +1,58 @@
 # FastSharp
 
-FastSharp is a .NET library for building ASP.NET Core Minimal APIs with a modular, domain-oriented style. It helps developers generate standard CRUD endpoints with very little code while keeping native Minimal API customization available.
+FastSharp is a lightweight library for building APIs in C# and ASP.NET Core Minimal APIs.
 
-This file is intended for an AI assistant that needs to understand how to use FastSharp in a consumer application and generate code for a developer who wants to adopt the library.
+Its main perspective is:
+
+- **Modules** define the route group and the API contract
+- **Endpoints** implement behavior as independent classes
+- **`AddCRUD`** is an optional shortcut for standard REST operations
+
+This file is intended for an AI assistant that needs to understand how to use FastSharp in a consumer project and generate code for a developer who wants to adopt the library.
 
 ## What FastSharp is for
 
 Use FastSharp when the developer wants to:
 
 - build Minimal APIs without controllers
-- organize endpoints by feature or domain
-- generate CRUD endpoints quickly from entities and a `DbContext`
-- combine generated CRUD routes with custom endpoints in the same module
-- keep access to native ASP.NET Core Minimal API configuration
-
-## Main packages
-
-- `FastSharp.Modules`: main package with modules, CRUD generation, and endpoint discovery
-- `FastSharp.Models`: lightweight package with shared model abstractions such as `IModel<TKey>` and `PagedResult<T>`
-
-In most API projects, the main package to install is `FastSharp.Modules`.
+- organize an API by domain instead of technical layers
+- define route groups through modules and behavior through endpoint classes
+- optionally generate CRUD endpoints from entities and a `DbContext`
+- combine generated CRUD routes with explicit custom endpoints
+- stay close to native Minimal APIs with low framework overhead
 
 ## Core mental model
 
-FastSharp revolves around modules.
+FastSharp organizes an API using:
 
-A module:
+- **Modules** as contracts and grouping units
+- **Endpoints** as implementations
 
-- represents a domain area such as products, orders, or inventory
-- groups routes under a common prefix
-- can declare one or more CRUD surfaces
-- can include custom endpoints
+A module typically represents a domain area such as products, orders, or inventory. It owns a route prefix and can include:
 
-Instead of creating controllers, the developer creates a class that inherits from `Module<TDbContext>`.
+- one or more CRUD surfaces
+- one or more custom `IEndpoint` implementations
+
+FastSharp is not controller-based. Think in terms of domain modules, not MVC controllers.
+
+## Main packages
+
+- `FastSharp.Modules`: main package with modules, endpoint discovery, and CRUD generation
+- `FastSharp.Models`: lightweight package with shared abstractions such as `IModel<TKey>` and `PagedResult<T>`
+
+In most API projects, the main package to install is `FastSharp.Modules`.
 
 ## Main building blocks
+
+### `Module`
+
+Use `Module` when the developer wants a module made only of custom endpoints and no EF Core dependency.
+
+This is useful for:
+
+- utility APIs
+- ping/health-style modules
+- modules with custom logic only
 
 ### `Module<TDbContext>`
 
@@ -54,6 +72,16 @@ Example:
 
 - `ConfigureModule("/api", group => group.WithTags("Products"))`
 
+### `IEndpoint`
+
+Represents a custom endpoint implementation.
+
+The endpoint implements:
+
+- `void Map(RouteGroupBuilder app)`
+
+It is then included in the module with `Include<T>()`.
+
 ### `AddCRUD<TEntity, TKey>(...)`
 
 Registers the standard CRUD endpoints for an entity.
@@ -64,15 +92,32 @@ Example:
 
 If the entity does not implement `IModel<TKey>`, there is an overload that accepts an id selector.
 
-### `IEndpoint`
+## Usage modes
 
-Represents a custom endpoint that can be added to a module.
+FastSharp can be used in three common ways.
 
-The endpoint implements:
+### 1. CRUD-only
 
-- `void Map(RouteGroupBuilder app)`
+Fastest adoption path when the developer wants standard REST endpoints quickly.
 
-It is then included in the module with `Include<T>()`.
+Example:
+
+- `AddCRUD<Product, int>("/products")`
+
+### 2. CRUD + custom endpoints
+
+Use when the developer wants standard CRUD plus feature-specific behavior.
+
+Example:
+
+- `AddCRUD<Product, int>("/products")`
+- `Include<CheckProductStock>()`
+
+### 3. Custom endpoints only
+
+Use when the developer does not need persistence-driven CRUD at all.
+
+This can be done with `Module` plus `IEndpoint` implementations, without EF Core.
 
 ## What `AddCRUD` generates
 
@@ -90,23 +135,46 @@ FastSharp generates these routes:
 - `PUT /api/products/{id}`
 - `DELETE /api/products/{id}`
 
+## Important route behavior
+
+Custom `IEndpoint` routes are mapped on the module route group, not under each `AddCRUD` prefix.
+
+That means if the module prefix is:
+
+- `ConfigureModule("/api", ...)`
+
+and a custom endpoint maps:
+
+- `app.MapGet("/{id}/stock", ...)`
+
+the final route is:
+
+- `GET /api/{id}/stock`
+
+not:
+
+- `GET /api/products/{id}/stock`
+
+unless the endpoint itself includes `/products` in its route template.
+
 ## Typical usage flow
 
 To help a developer adopt FastSharp, generate code following this sequence:
 
-1. Define an entity
-2. Define a `DbContext`
-3. Create a module inheriting from `Module<TDbContext>`
+1. Define an entity when CRUD is needed
+2. Define a `DbContext` when using `Module<TDbContext>`
+3. Create a module inheriting from `Module` or `Module<TDbContext>`
 4. Call `ConfigureModule(...)`
-5. Call `AddCRUD(...)`
-6. Register FastSharp in `Program.cs`
-7. Map endpoints in `Program.cs`
+5. Add `AddCRUD(...)` if CRUD is desired
+6. Add custom `IEndpoint` implementations if needed
+7. Register FastSharp in `Program.cs`
+8. Map endpoints in `Program.cs`
 
 ## Consumer setup pattern
 
 In `Program.cs`, the typical integration is:
 
-- register the EF Core `DbContext`
+- register the EF Core `DbContext` if needed
 - call `builder.Services.AddFastSharpEndpoints()`
 - build the app
 - call `app.MapFastSharpEndpoints()`
@@ -126,52 +194,39 @@ Useful patterns:
 This is useful when generating code for:
 
 - read/write models
-- API contracts separated from EF entities
-- paged read models
-
-## Custom endpoints
-
-FastSharp is not limited to generic CRUD.
-
-A developer can define custom endpoints and include them in the same module. These endpoints are mapped relative to the module prefix.
-
-Example idea:
-
-- `/api/products/{id}/stock`
-
-This makes FastSharp suitable when the developer wants a combination of:
-
-- standard CRUD routes
-- feature-specific actions
+- contracts separated from EF entities
+- paged result projections
 
 ## Important usage rules
 
 - Route prefixes should use a leading slash, for example `"/api"` and `"/products"`
 - Authorization can be chained using native Minimal API methods on the exposed `RouteHandlerBuilder`
-- Custom endpoints are relative to the module prefix
 - `Include<T>()` is the preferred explicit way to register custom endpoints
+- `AddCRUD` is optional, not mandatory
+- A module can exist with only custom endpoints
 
 ## What an AI should generate for the developer
 
 When a developer asks for code using FastSharp, prefer generating:
 
-- entity classes
+- entity classes when CRUD is requested
 - DTO classes when needed
-- `DbContext`
-- module classes inheriting from `Module<TDbContext>`
-- custom `IEndpoint` implementations when needed
+- `DbContext` when persistence is involved
+- module classes inheriting from `Module<TDbContext>` or `Module`
+- custom `IEndpoint` implementations when behavior is explicit
 - `Program.cs` integration code
 
 Prefer examples that are:
 
 - Minimal API oriented
-- EF Core compatible
 - modular by feature
 - easy to run locally
+- explicit about final route shapes
 
 ## Good entry points to understand usage
 
 - `README.md`
+- `how-to-fastsharp.md`
 - `docs/customization.md`
 - `docs/architecture.md`
 - `Samples/QuickStart/Program.cs`
@@ -182,13 +237,15 @@ Prefer examples that are:
 
 When helping a developer use FastSharp:
 
-- think in terms of modules, not controllers
-- generate feature-oriented code organization
-- default to a clean `Module<TDbContext>` example
+- think in terms of modules as contracts and endpoints as implementations
+- do not assume CRUD is required
+- prefer `Module` when the request is custom endpoints only
+- prefer `Module<TDbContext>` when the request includes EF Core persistence
 - use DTOs when the request suggests separation between persistence and API contracts
 - include the final route shape when explaining generated endpoints
+- use `how-to-fastsharp.md` when the developer needs guidance on how to structure a FastSharp project
 - mention `AddFastSharpEndpoints()` and `MapFastSharpEndpoints()` in setup guidance
 
 ## Short summary
 
-FastSharp is best understood as a library that lets a developer define a domain module, attach CRUD behavior to it with `AddCRUD`, and extend it with custom Minimal API endpoints, all while keeping the application organized and concise.
+FastSharp helps a developer structure a Minimal API by domain through modules and endpoint classes, with optional CRUD generation when it is useful, not mandatory.
