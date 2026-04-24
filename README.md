@@ -209,18 +209,21 @@ You can create modules without relying on EF Core and define only IEndpoint impl
 
 ---
 
-## 🆚 FastSharp vs FastEndpoints
+## 🆚 How FastSharp differs from FastEndpoints
 
-FastEndpoints focuses on building endpoints with a structured and opinionated approach.
+FastEndpoints focuses on building endpoints with a structured, opinionated approach.
 
-FastSharp takes a different approach:
+FastSharp focuses on organizing APIs by domain:
 
-- Organizes APIs around **modules (domains)** instead of individual endpoints  
-- Treats endpoints as **implementations inside a module**  
-- Provides **optional CRUD generation** for common cases  
-- Stays closer to **Minimal APIs**, with less framework overhead  
+- **Modules (domains) as first-class units**  
+- **Endpoints (`IEndpoint`) as implementations inside a module**  
+- **Optional CRUD generation** for common cases  
+- **Closer to Minimal APIs**, with less framework overhead  
 
-If you prefer explicit modular architecture with lightweight abstractions, FastSharp aims to provide that balance.
+**When to choose each:**
+
+- Choose **FastEndpoints** if you want a more opinionated endpoint-centric framework with built-in pipeline features.  
+- Choose **FastSharp** if you prefer explicit modular architecture with lightweight abstractions and domain-oriented organization.
 
 ---
 
