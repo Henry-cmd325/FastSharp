@@ -174,11 +174,25 @@ app.Run();
 
 Run the project and open `/openapi/v1.json` — you'll see all 6 endpoints ready to use.
 
+
+## What does `AddCRUD` generate?
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/products/paged` | Paginated list |
+| `GET` | `/api/products` | Full list |
+| `GET` | `/api/products/{id}` | Get by ID |
+| `POST` | `/api/products` | Create |
+| `PUT` | `/api/products/{id}` | Update |
+| `DELETE` | `/api/products/{id}` | Delete |
+
+Paths use the module prefix from `ConfigureModule` (these examples use `/api`) plus the `AddCRUD` route prefix (here, `/products`). **Convention:** pass a leading slash on every path you own (`ConfigureModule`, `AddCRUD`, and custom `MapGet` / `MapPost` templates) so routes stay consistent across modules and the library.
+
+---
+
 ## 🧠 Usage Modes
 
 FastSharp can be used in different ways depending on your needs:
-
-> Want guidance on when to keep everything in one project and when to split into assemblies? Read [How to FastSharp](how-to-fastsharp.md).
 
 1. CRUD-only (fastest)
 ```csharp
@@ -207,27 +221,6 @@ FastSharp takes a different approach:
 - Stays closer to **Minimal APIs**, with less framework overhead  
 
 If you prefer explicit modular architecture with lightweight abstractions, FastSharp aims to provide that balance.
-
----
-
-> **Module discovery:** With no arguments, `AddFastSharpEndpoints()` and `MapFastSharpEndpoints()` scan the **calling assembly** (typically the project that contains `Program.cs`). If your modules live in another class library, pass that assembly explicitly. See [Assembly scanning](docs/assembly-scanning.md).
-
-> **OpenAPI UI:** The snippet above exposes the OpenAPI document only. For Swagger UI in Development (like the repo sample), add `Swashbuckle` or your preferred UI and call `MapOpenApi` / UI middleware where appropriate.
-
----
-
-## What does `AddCRUD` generate?
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| `GET` | `/api/products/paged` | Paginated list |
-| `GET` | `/api/products` | Full list |
-| `GET` | `/api/products/{id}` | Get by ID |
-| `POST` | `/api/products` | Create |
-| `PUT` | `/api/products/{id}` | Update |
-| `DELETE` | `/api/products/{id}` | Delete |
-
-Paths use the module prefix from `ConfigureModule` (these examples use `/api`) plus the `AddCRUD` route prefix (here, `/products`). **Convention:** pass a leading slash on every path you own (`ConfigureModule`, `AddCRUD`, and custom `MapGet` / `MapPost` templates) so routes stay consistent across modules and the library.
 
 ---
 
@@ -293,6 +286,12 @@ Custom `IEndpoint` types are mapped on the **module route group** (the `Configur
 
 ---
 
+> **Module discovery:** With no arguments, `AddFastSharpEndpoints()` and `MapFastSharpEndpoints()` scan the **calling assembly** (typically the project that contains `Program.cs`). If your modules live in another class library, pass that assembly explicitly. See [Assembly scanning](docs/assembly-scanning.md).
+
+> **OpenAPI UI:** The snippet above exposes the OpenAPI document only. For Swagger UI in Development (like the repo sample), add `Swashbuckle` or your preferred UI and call `MapOpenApi` / UI middleware where appropriate.
+
+---
+
 ## Architecture
 
 FastSharp is built on **Modular Slices** — group your logic by domain, not by technical layers.
@@ -329,6 +328,7 @@ Each module is a self-contained unit: its routes, its DTOs, its custom endpoints
 - [Customization](docs/customization.md)
 - [Assembly scanning](docs/assembly-scanning.md)
 - [Roadmap](docs/roadmap.md)
+- [How to FastSharp](docs/how-to-fastsharp.md)
 
 ---
 

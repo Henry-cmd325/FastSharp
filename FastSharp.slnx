@@ -5,8 +5,10 @@
   <Folder Name="/Elementos de la solución/">
     <File Path=".github/copilot-instructions.md" />
     <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
     <File Path="Gemini_Generated_Image_52oeva52oeva52oe.png" />
     <File Path="LICENSE" />
+    <File Path="llms.txt" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Elementos de la solución/docs/">
