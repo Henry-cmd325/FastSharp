@@ -1,5 +1,6 @@
 ﻿using FastSharp.Models;
 using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Registry;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -47,28 +48,16 @@ public abstract class Module : IFastModule
     /// Registers all non-abstract classes in the namespace of the specified type that implement the IEndpoint
     /// interface for use in Minimal APIs.
     /// </summary>
-    /// <remarks>This method scans the assembly of the specified type T to find all non-abstract
-    /// classes within the same namespace that implement IEndpoint. The discovered types are added to the module
-    /// endpoints collection, making them available for execution by the FastSharp engine when constructing Minimal
-    /// APIs.</remarks>
+    /// <remarks>This method uses source-generated endpoint metadata from the assembly of the specified type T to
+    /// find all endpoint classes within the same namespace. The discovered types are added to the module endpoints
+    /// collection, making them available for execution by the FastSharp engine when constructing Minimal APIs.</remarks>
     /// <typeparam name="T">The type whose namespace will be scanned for IEndpoint implementations. Must implement IEndpoint.</typeparam>
     protected void IncludeNamespace<T>() where T : IEndpoint
     {
         var ns = typeof(T).Namespace;
-        // Scan the assembly for classes that:
-        // 1. Are in the target namespace.
-        // 2. Implement IEndpoint.
         var targetAssembly = typeof(T).Assembly;
-        var types = targetAssembly
-            .GetTypes()
-            .Where(p => typeof(IEndpoint).IsAssignableFrom(p)
-                        && p.IsClass
-                        && p.Namespace?.StartsWith(ns ?? string.Empty) == true
-                        && !p.IsAbstract);
-
-        // Store the type so the FastSharp engine can execute it
-        // when building the Minimal APIs.
-        _moduleEndpoints.AddRange(types);
+        var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(targetAssembly);
+        _moduleEndpoints.AddRange(registry.GetEndpointTypes(ns ?? string.Empty));
     }
 
     /// <summary>

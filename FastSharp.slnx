@@ -3,7 +3,6 @@
     <File Path=".github/workflows/nuget-publish.yml" />
   </Folder>
   <Folder Name="/Elementos de la solución/">
-    <File Path=".github/copilot-instructions.md" />
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
     <File Path="Gemini_Generated_Image_52oeva52oeva52oe.png" />
@@ -14,13 +13,14 @@
   <Folder Name="/Elementos de la solución/docs/">
     <File Path="docs/architecture.md" />
     <File Path="docs/customization.md" />
+    <File Path="docs/how-to-fastsharp.md" />
     <File Path="docs/roadmap.md" />
-    <File Path="how-to-fastsharp.md" />
   </Folder>
   <Folder Name="/Samples/" />
   <Folder Name="/Samples/QuickStart/">
     <Project Path="Samples/QuickStart/Api.csproj" />
   </Folder>
+  <Project Path="FastSharp.Generators/FastSharp.Generators.csproj" />
   <Project Path="FastSharp.Models/FastSharp.Models.csproj" />
   <Project Path="FastSharp.Modules/FastSharp.Modules.csproj" />
   <Project Path="FastSharp.Tests/FastSharp.Tests.csproj" />

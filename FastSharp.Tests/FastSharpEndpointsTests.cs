@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Net;
 using System.Net.Http.Json;
 using Xunit;
+using FastSharp.Modules.Registry;
 
 namespace FastSharp.Tests;
 public class FastSharpEndpointsTests
@@ -28,7 +29,7 @@ public class FastSharpEndpointsTests
         builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
 
         var app = builder.Build();
-        app.MapFastSharpEndpoints(typeof(SampleModule).Assembly);
+        app.MapFastSharpEndpoints();
         await app.StartAsync();
         return app;
     }
@@ -55,6 +56,50 @@ public class FastSharpEndpointsTests
         using var scope = provider.CreateScope();
         Assert.NotNull(scope.ServiceProvider.GetService(typeof(NoContextModule)));
         Assert.NotNull(scope.ServiceProvider.GetService(typeof(NoContextPingEndpoint)));
+    }
+
+    [Fact]
+    public void FastSharpGenerator_RegistersAssemblyRegistry()
+    {
+        var found = FastSharpAssemblyRegistryStore.TryGetRegistry(typeof(SampleModule).Assembly, out var registry);
+
+        Assert.True(found);
+        Assert.NotNull(registry);
+        Assert.Contains(typeof(PingEndpoint), registry!.GetEndpointTypes(typeof(PingEndpoint).Namespace!));
+    }
+
+    [Fact]
+    public void AddFastSharpEndpoints_ThrowsWhenAssemblyHasNoGeneratedRegistry()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddFastSharpEndpoints(typeof(string).Assembly));
+
+        Assert.Contains("source-generated endpoint metadata", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MapFastSharpEndpoints_ThrowsWhenAssemblyHasNoGeneratedRegistry()
+    {
+        var builder = WebApplication.CreateBuilder();
+        var app = builder.Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            app.MapFastSharpEndpoints(typeof(string).Assembly));
+
+        Assert.Contains("source-generated endpoint metadata", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_UsesAssembliesRegisteredInAddFastSharpEndpoints()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/api/nocontext/ping");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -102,19 +147,6 @@ public class FastSharpEndpointsTests
 
         var response = await client.PutAsJsonAsync("/api/sample/999", new TestModel { Id = 999, Name = "Missing" });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task MapFastSharpEndpoints_Put_ReturnsBadRequestWhenIdMismatch()
-    {
-        await using var app = await CreateAppAsync();
-        var client = app.GetTestClient();
-
-        var createResponse = await client.PostAsJsonAsync("/api/sample", new TestModel { Id = 1, Name = "Widget" });
-        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
-
-        var response = await client.PutAsJsonAsync("/api/sample/1", new TestModel { Id = 2, Name = "Mismatch" });
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using FastSharp.Modules.Registry;
+using System.Reflection;
 
 namespace FastSharp.Modules;
 
@@ -12,18 +13,23 @@ public static class DependencyInjection
             assemblies = [Assembly.GetCallingAssembly()];
         }
 
-        foreach (var assembly in assemblies)
-        {
-            var typesToRegister = assembly.GetTypes()
-                .Where(t => !t.IsAbstract && !t.IsInterface &&
-                            (typeof(IEndpoint).IsAssignableFrom(t) ||
-                             typeof(IFastModule).IsAssignableFrom(t)));
+        var registeredAssemblies = assemblies.Distinct().ToArray();
+        services.AddSingleton(new FastSharpAssemblyRegistration(registeredAssemblies));
 
-            foreach (var type in typesToRegister)
-                services.AddTransient(type);
+        foreach (var assembly in registeredAssemblies)
+        {
+            var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(assembly);
+            registry.RegisterServices(services);
         }
 
         return services;
+    }
+
+    public static void MapFastSharpEndpoints(this IEndpointRouteBuilder app)
+    {
+        var registration = app.ServiceProvider.GetService<FastSharpAssemblyRegistration>();
+        var assemblies = registration?.Assemblies.ToArray() ?? [Assembly.GetCallingAssembly()];
+        MapFastSharpEndpoints(app, assemblies);
     }
 
     public static void MapFastSharpEndpoints(this IEndpointRouteBuilder app, params Assembly[] assemblies)
@@ -35,18 +41,8 @@ public static class DependencyInjection
 
         foreach (var assembly in assemblies)
         {
-            // Look for the main module types to start the mapping process.
-            var moduleTypes = assembly.GetTypes()
-                .Where(t => !t.IsAbstract &&
-                            !t.IsInterface &&
-                            typeof(IFastModule).IsAssignableFrom(t));
-
-            foreach (var type in moduleTypes)
-            {
-                var module = (IFastModule)app.ServiceProvider.GetRequiredService(type);
-
-                module.Map(app);
-            }
+            var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(assembly);
+            registry.MapEndpoints(app);
         }
     }
 }

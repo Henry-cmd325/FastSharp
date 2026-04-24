@@ -1,21 +1,34 @@
 ﻿using FastSharp.Modules.Configuration;
-using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Mapster;
 
 namespace FastSharp.Modules.Endpoints;
 
-public class CreateEndpoint<TDbContext, TEntity, TKey>(Func<TEntity, TKey> getId) : IGenericEndpoint
+public class CreateEndpoint<TDbContext, TEntity, TKey>() : IGenericEndpoint
     where TEntity : class
     where TDbContext : DbContext
 {
     protected EndpointOptions _options = new();
-    protected readonly Func<TEntity, TKey> _getId = getId;
 
     public void Configure(EndpointOptions options)
     {
         _options = options;
+    }
+
+    protected TKey GetPrimaryKeyValue(TDbContext context, TEntity entity)
+    {
+        // We get the primary key property name from the EF model metadata.
+        var keyName = (context.Model.FindEntityType(typeof(TEntity))
+            ?.FindPrimaryKey()
+            ?.Properties
+            .Select(x => x.Name)
+            .FirstOrDefault()) ?? throw new Exception("No se encontró PK");
+
+        // We access the value through the EF entry (Entry)
+        // This is very fast and does not use .Compile()
+        return (TKey)context.Entry(entity).Property(keyName).CurrentValue!;
     }
 
     public virtual void Map(RouteGroupBuilder app, EndpointOptions allOptions)
@@ -27,7 +40,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(Func<TEntity, TKey> getId
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
 
-                var entityId = _getId(entity)?.ToString();
+                var entityId = GetPrimaryKeyValue(context, entity)?.ToString();
 
                 return TypedResults.Created($"/{entityId}", entity);
             });
@@ -39,7 +52,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(Func<TEntity, TKey> getId
 }
 
 // With DTO.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TEntity, TKey> getId) : CreateEndpoint<TDbContext, TEntity, TKey>(getId)
+public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>() : CreateEndpoint<TDbContext, TEntity, TKey>
     where TEntity : class
     where TDbContext : DbContext
     where TDto : class
@@ -53,7 +66,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TEntity, TKey>
                 var entity = dto.Adapt<TEntity>();
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
-                var entityId = _getId(entity)?.ToString();
+                var entityId = GetPrimaryKeyValue(context, entity)?.ToString();
                 return TypedResults.Created($"/{entityId}", dto);
             });
 
@@ -64,7 +77,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TEntity, TKey>
 }
 
 // With request and response DTOs.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(Func<TEntity, TKey> getId) : CreateEndpoint<TDbContext, TEntity, TKey>(getId)
+public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>() : CreateEndpoint<TDbContext, TEntity, TKey>
     where TEntity : class
     where TDbContext : DbContext
     where TRequest : class
@@ -80,7 +93,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(Func
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
                 var response = entity.Adapt<TResponse>();
-                var entityId = _getId(entity)?.ToString();
+                var entityId = GetPrimaryKeyValue(context, entity)?.ToString();
                 return TypedResults.Created($"/{entityId}", response);
             });
 
