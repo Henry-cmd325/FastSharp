@@ -35,9 +35,9 @@ jobs:
           # Extraemos el número de versión (quitando la 'v')
           VERSION=${GITHUB_REF_NAME#v}
 
+          dotnet pack FastSharp.Generators/FastSharp.Generators.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
           dotnet pack FastSharp.Models/FastSharp.Models.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
           dotnet pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
-          dotnet pack FastSharp.Generators/FastSharp.Generators.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
 
       - name: Publish to NuGet
         run: dotnet nuget push "./artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
