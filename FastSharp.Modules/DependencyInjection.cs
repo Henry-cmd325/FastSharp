@@ -1,4 +1,5 @@
 ﻿using FastSharp.Modules.Registry;
+using FluentValidation;
 using System.Reflection;
 
 namespace FastSharp.Modules;
@@ -16,10 +17,12 @@ public static class DependencyInjection
         var registeredAssemblies = assemblies.Distinct().ToArray();
         services.AddSingleton(new FastSharpAssemblyRegistration(registeredAssemblies));
 
+        services.AddValidatorsFromAssemblies(registeredAssemblies);
         foreach (var assembly in registeredAssemblies)
         {
             var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(assembly);
             registry.RegisterServices(services);
+            
         }
 
         return services;

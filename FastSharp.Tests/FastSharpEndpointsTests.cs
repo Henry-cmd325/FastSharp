@@ -12,8 +12,10 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Xunit;
 using FastSharp.Modules.Registry;
+using FastSharp.Tests.Validators;
 
 namespace FastSharp.Tests;
 public class FastSharpEndpointsTests
@@ -27,6 +29,7 @@ public class FastSharpEndpointsTests
         builder.Services.AddDbContext<TestDbContext>(options =>
             options.UseInMemoryDatabase("FastSharpTests", databaseRoot));
         builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
+        builder.Services.AddScoped<ValidationRequestValidator>();
 
         var app = builder.Build();
         app.MapFastSharpEndpoints();
@@ -210,7 +213,7 @@ public class FastSharpEndpointsTests
     [Fact]
     public void ModuleWithoutContext_DoesNotExposeGenericCrudSupport()
     {
-        var nonGenericModuleMethods = typeof(FastSharp.Modules.Module)
+        var nonGenericModuleMethods = typeof(FastSharp.Modules.Core.Module)
             .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Where(method => method.Name == "AddCRUD");
 
@@ -348,5 +351,26 @@ public class FastSharpEndpointsTests
 
         Assert.NotNull(model);
         Assert.Equal("DTO Updated", model!.Name);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_WithValidation_ReturnsValidationProblemForInvalidRequest()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var invalidResponse = await client.PostAsJsonAsync("/api/validation", new ValidationRequest { Name = string.Empty });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidResponse.StatusCode);
+
+        using var problem = await JsonDocument.ParseAsync(await invalidResponse.Content.ReadAsStreamAsync());
+        Assert.True(problem.RootElement.TryGetProperty("errors", out var errors));
+        Assert.True(errors.TryGetProperty(nameof(ValidationRequest.Name), out _));
+
+        var validResponse = await client.PostAsJsonAsync("/api/validation", new ValidationRequest { Name = "valid" });
+        Assert.Equal(HttpStatusCode.OK, validResponse.StatusCode);
+
+        var body = await validResponse.Content.ReadFromJsonAsync<ValidationRequest>();
+        Assert.NotNull(body);
+        Assert.Equal("valid", body!.Name);
     }
 }

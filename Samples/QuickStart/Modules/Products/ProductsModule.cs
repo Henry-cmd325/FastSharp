@@ -2,8 +2,8 @@
 using Api.Context.Models;
 using Api.Modules.Products.Dtos;
 using Api.Modules.Products.Endpoints;
-using FastSharp.Modules;
 using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Core;
 
 namespace Api.Modules.Products;
 
@@ -39,5 +39,6 @@ public class ProductsModule : Module<ApiDbContext>
 
         // You can also include custom endpoints in the module.
         Include<CheckProductStock>();
+        Include<UpdateProductsStock>();
     }
 }

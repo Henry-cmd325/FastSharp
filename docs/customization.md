@@ -22,7 +22,7 @@ Customization of generated CRUD endpoints is done in your module's constructor v
 To configure the module base group (applying options to all endpoints in the group), use `ConfigureModule`. This lets you add metadata or policies at the group level.
 
 ```csharp
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using FastSharp.Modules.Configuration;
 using YourProject.Models;
 using YourProject.Data;
@@ -99,6 +99,40 @@ This mode does not require EF Core or `AddCRUD(...)`.
 
 ---
 
+# Validation
+
+Custom endpoints can use FluentValidation through `WithValidation<T>()`.
+
+```csharp
+using FastSharp.Modules.Core;
+using FluentValidation;
+
+builder.Services.AddScoped<IValidator<CreateProductRequest>, CreateProductRequestValidator>();
+
+public record CreateProductRequest(string Name);
+
+public sealed class CreateProductRequestValidator : AbstractValidator<CreateProductRequest>
+{
+    public CreateProductRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty();
+    }
+}
+
+public sealed class CreateProductEndpoint : IEndpoint
+{
+    public void Map(RouteGroupBuilder app)
+    {
+        app.MapPost("/products", (CreateProductRequest request) => Results.Ok(request))
+            .WithValidation<CreateProductRequest>();
+    }
+}
+```
+
+See [Validation with FluentValidation](validation.md) for the full flow and response behavior.
+
+---
+
 # DTO contracts
 
 ## 1) Single DTO for all CRUD endpoints
@@ -147,7 +181,7 @@ Important: custom endpoints are mapped on the **module route group**, not inside
 
 ```csharp
 // YourProject/Slices/Products/Endpoints/CheckStock.cs
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using Microsoft.AspNetCore.Mvc;
 
 public class CheckStock : IEndpoint

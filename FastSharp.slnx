@@ -15,6 +15,10 @@
     <File Path="docs/customization.md" />
     <File Path="docs/how-to-fastsharp.md" />
     <File Path="docs/roadmap.md" />
+    <File Path="docs/validation.md" />
+  </Folder>
+  <Folder Name="/Elementos de la solución/docs/ADR/">
+    <File Path="docs/ADR/001-registry-lifecycle.md" />
   </Folder>
   <Folder Name="/Samples/" />
   <Folder Name="/Samples/QuickStart/">

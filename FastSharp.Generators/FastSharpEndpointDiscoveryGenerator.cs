@@ -46,8 +46,8 @@ public sealed class FastSharpEndpointDiscoveryGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, Compilation compilation, ImmutableArray<CandidateInfo?> rawCandidates)
     {
-        var endpointInterface = compilation.GetTypeByMetadataName("FastSharp.Modules.IEndpoint");
-        var moduleInterface = compilation.GetTypeByMetadataName("FastSharp.Modules.IFastModule");
+        var endpointInterface = compilation.GetTypeByMetadataName("FastSharp.Modules.Core.IEndpoint");
+        var moduleInterface = compilation.GetTypeByMetadataName("FastSharp.Modules.Core.IFastModule");
         var registryInterface = compilation.GetTypeByMetadataName("FastSharp.Modules.Registry.IFastSharpAssemblyRegistry");
         var registryStore = compilation.GetTypeByMetadataName("FastSharp.Modules.Registry.FastSharpAssemblyRegistryStore");
         var moduleInvoker = compilation.GetTypeByMetadataName("FastSharp.Modules.Registry.FastSharpModuleInvoker");

@@ -1,4 +1,4 @@
-﻿using FastSharp.Modules;
+﻿using FastSharp.Modules.Core;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Modules.Products.Endpoints
@@ -11,7 +11,7 @@ namespace Api.Modules.Products.Endpoints
             {
                 return Results.Ok($"Checking stock for product {id}");
             })
-            .WithTags("prueba");
+            .WithTags("Custom");
         }
     }
 }

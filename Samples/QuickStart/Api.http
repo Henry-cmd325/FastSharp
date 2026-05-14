@@ -39,25 +39,6 @@ Accept: application/json
 
 ###
 
-### Products - update
-PUT {{Api_HostAddress}}/api/products/{{productId}}
-Content-Type: application/json
-
-{
-  "id": {{productId}},
-  "name": "Keyboard Pro",
-  "price": 79.99,
-  "description": "Mechanical keyboard with RGB"
-}
-
-###
-
-### Products - delete
-DELETE {{Api_HostAddress}}/api/products/{{productId}}
-Accept: application/json
-
-###
-
 ### Alternative products - create
 POST {{Api_HostAddress}}/api/products/alternative
 Content-Type: application/json
@@ -95,14 +76,57 @@ Content-Type: application/json
 
 ###
 
-### Alternative products - delete
-DELETE {{Api_HostAddress}}/api/products/alternative/{{alternativeProductId}}
+### Custom endpoint - check product stock
+GET {{Api_HostAddress}}/api/{{productId}}/stock
 Accept: application/json
 
 ###
 
-### Custom endpoint - check product stock
-GET {{Api_HostAddress}}/api/{{productId}}/stock
+### Custom endpoint - update product stock (valid)
+POST {{Api_HostAddress}}/api/update-stock/{{productId}}
+Content-Type: application/json
+
+{
+  "id": {{productId}},
+  "name": "Keyboard",
+  "quantity": 5
+}
+
+###
+
+### Custom endpoint - update product stock (invalid validation)
+POST {{Api_HostAddress}}/api/update-stock/{{productId}}
+Content-Type: application/json
+
+{
+  "id": 0,
+  "name": "",
+  "quantity": 0
+}
+
+###
+
+### Products - update
+PUT {{Api_HostAddress}}/api/products/{{productId}}
+Content-Type: application/json
+
+{
+  "id": {{productId}},
+  "name": "Keyboard Pro",
+  "price": 79.99,
+  "description": "Mechanical keyboard with RGB"
+}
+
+###
+
+### Products - delete
+DELETE {{Api_HostAddress}}/api/products/{{productId}}
+Accept: application/json
+
+###
+
+### Alternative products - delete
+DELETE {{Api_HostAddress}}/api/products/alternative/{{alternativeProductId}}
 Accept: application/json
 
 ###

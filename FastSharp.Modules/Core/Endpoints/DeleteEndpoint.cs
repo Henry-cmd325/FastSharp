@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace FastSharp.Modules.Endpoints;
+namespace FastSharp.Modules.Core.Endpoints;
 
 public class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Func<TEntity, bool>>> predicateFactory) : IGenericEndpoint
     where TEntity : class

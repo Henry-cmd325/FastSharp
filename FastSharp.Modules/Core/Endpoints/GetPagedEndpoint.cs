@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace FastSharp.Modules.Endpoints;
+namespace FastSharp.Modules.Core.Endpoints;
 
 public class GetPagedEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntity, TKey>> idSelector) : IGenericEndpoint
     where TEntity : class

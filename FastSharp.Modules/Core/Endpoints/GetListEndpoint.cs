@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace FastSharp.Modules.Endpoints;
+namespace FastSharp.Modules.Core.Endpoints;
 
 public class GetListEndpoint<TDbContext, TEntity, TKey> : IGenericEndpoint
     where TEntity : class

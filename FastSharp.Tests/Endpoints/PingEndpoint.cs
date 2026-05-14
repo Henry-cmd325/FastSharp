@@ -1,4 +1,4 @@
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 

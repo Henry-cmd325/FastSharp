@@ -1,4 +1,4 @@
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using FastSharp.Tests.Context;
 using FastSharp.Tests.Dtos;
 

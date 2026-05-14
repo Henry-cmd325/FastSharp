@@ -1,10 +1,9 @@
 ﻿using FastSharp.Models;
 using FastSharp.Modules.Configuration;
-using FastSharp.Modules.Registry;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace FastSharp.Modules;
+namespace FastSharp.Modules.Core;
 
 public abstract class Module : IFastModule
 {
@@ -45,26 +44,10 @@ public abstract class Module : IFastModule
     }
 
     /// <summary>
-    /// Registers all non-abstract classes in the namespace of the specified type that implement the IEndpoint
-    /// interface for use in Minimal APIs.
-    /// </summary>
-    /// <remarks>This method uses source-generated endpoint metadata from the assembly of the specified type T to
-    /// find all endpoint classes within the same namespace. The discovered types are added to the module endpoints
-    /// collection, making them available for execution by the FastSharp engine when constructing Minimal APIs.</remarks>
-    /// <typeparam name="T">The type whose namespace will be scanned for IEndpoint implementations. Must implement IEndpoint.</typeparam>
-    protected void IncludeNamespace<T>() where T : IEndpoint
-    {
-        var ns = typeof(T).Namespace;
-        var targetAssembly = typeof(T).Assembly;
-        var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(targetAssembly);
-        _moduleEndpoints.AddRange(registry.GetEndpointTypes(ns ?? string.Empty));
-    }
-
-    /// <summary>
     /// Adds the specified endpoint to the module's collection of recognized endpoints.
     /// </summary>
-    /// <remarks>Call this method to register an additional endpoint with the module.
-    /// Try to always use this method instead of IncludeNamespace when possible, as it is more explicit and makes the module's behavior clearer.
+    /// <remarks>
+    /// Call this method to register an additional endpoint with the module.
     /// </remarks>
     /// <typeparam name="TEndpoint">The type of the endpoint to include. Must implement the IEndpoint interface.</typeparam>
     protected void Include<TEndpoint>() where TEndpoint : IEndpoint

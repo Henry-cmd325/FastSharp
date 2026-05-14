@@ -1,6 +1,6 @@
 ﻿using FastSharp.Modules.Configuration;
 
-namespace FastSharp.Modules.Endpoints
+namespace FastSharp.Modules.Core.Endpoints
 {
     internal interface IGenericEndpoint
     {

@@ -5,8 +5,7 @@
 ## Indice / Index
 
 - [Arquitectura modular / Modular architecture](architecture.md)
-- [Uso basico / Basic usage](basic-usage.md)
 - [Personalizacion / Customization](customization.md)
-- [Endpoints personalizados / Custom endpoints](custom-endpoints.md)
+- [Validacion con FluentValidation / Validation with FluentValidation](validation.md)
 - [Descubrimiento por ensamblados / Assembly scanning](assembly-scanning.md)
 - [Roadmap](roadmap.md)

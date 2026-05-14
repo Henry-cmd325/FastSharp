@@ -1,4 +1,4 @@
-﻿namespace FastSharp.Modules;
+﻿namespace FastSharp.Modules.Core;
 
 public interface IEndpoint
 {

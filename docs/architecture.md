@@ -16,7 +16,7 @@
 
 FastSharp does not organize the backend around traditional technical layers (Controllers, Services, Repositories), but around **domain modules**.
 
-> 🧠 If you are looking for practical project structure guidance, see [How to FastSharp](../how-to-fastsharp.md).
+> 🧠 If you are looking for practical project structure guidance, see [How to FastSharp](how-to-fastsharp.md).
 
 Its main perspective is:
 
@@ -101,7 +101,7 @@ This means FastSharp should be understood as **modules first, endpoints second, 
 
 ```csharp
 // YourProject/Modules/Inventory/InventoryModule.cs
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using FastSharp.Modules.Configuration;
 using YourProject.Data;
 using YourProject.Models;
@@ -143,7 +143,7 @@ Not every module needs CRUD or EF Core.
 You can also define a plain `Module` and include only explicit `IEndpoint` implementations:
 
 ```csharp
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 
 public sealed class HealthModule : Module
 {

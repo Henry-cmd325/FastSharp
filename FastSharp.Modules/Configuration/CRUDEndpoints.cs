@@ -1,5 +1,5 @@
 ﻿using FastSharp.Models;
-using FastSharp.Modules.Endpoints;
+using FastSharp.Modules.Core.Endpoints;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 

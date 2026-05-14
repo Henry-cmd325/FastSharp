@@ -50,7 +50,7 @@ dotnet add package FastSharp.Models
 
 The minimum setup is **four code files** (steps 2–5 below) plus package restore. This example uses an in-memory database so you can run it immediately.
 
-> 🧠 **Need help choosing a project structure?** See [How to FastSharp](how-to-fastsharp.md) for the recommended ways to organize a FastSharp application as it grows.
+> 🧠 **Need help choosing a project structure?** See [How to FastSharp](docs/how-to-fastsharp.md) for the recommended ways to organize a FastSharp application as it grows.
 
 **1. Install the dependencies**
 ```bash
@@ -65,7 +65,7 @@ dotnet add package Microsoft.EntityFrameworkCore.InMemory
 // Models/Product.cs
 using FastSharp.Models;
 
-public class Product : IModel<int>
+public class Product
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -94,7 +94,7 @@ using yourproject.Context;
 using yourproject.Context.Models;
 using yourproject.Modules.Products.Dtos;
 using yourproject.Modules.Products.Endpoints;
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using FastSharp.Modules.Configuration;
 
 namespace yourproject.Modules.Products;
@@ -108,12 +108,7 @@ public class ProductsModule : Module<ApiDbContext>
             .WithDescription("Endpoints of products module")
         );
 
-        // Simplest way: Automatically maps all standard CRUD operations to ProductDto.
-        // If your model implements IModel, FastSharp handles the Id selection automatically.
-        AddCRUD<Product, int>("/products", crud => crud.ConfigureAll<ProductDto>());
-        
-        // Advanced: Full control over each endpoint.
-        // You can pass a manual Id selector (p => p.Id) for existing models that don't implement IModel.
+// Advanced example: use a manual Id selector for entities that do not implement IModel<int>.
         AddCRUD<Product, int>("/products/alternative", p => p.Id, crud =>
         {
             crud.DisableEndpoint(GenericEndpoint.GetList);
@@ -156,6 +151,7 @@ public class CheckProductStock : IEndpoint
 
 ```csharp
 using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -172,21 +168,21 @@ app.MapOpenApi();
 app.Run();
 ```
 
-Run the project and open `/openapi/v1.json` — you'll see all 6 endpoints ready to use.
+Run the project and open `/openapi/v1.json` — you'll see the generated CRUD endpoints for `/api/products/alternative` plus any custom endpoints you include in the module.
 
 
 ## What does `AddCRUD` generate?
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| `GET` | `/api/products/paged` | Paginated list |
-| `GET` | `/api/products` | Full list |
-| `GET` | `/api/products/{id}` | Get by ID |
-| `POST` | `/api/products` | Create |
-| `PUT` | `/api/products/{id}` | Update |
-| `DELETE` | `/api/products/{id}` | Delete |
+| `GET` | `/api/products/alternative/paged` | Paginated list |
+| `GET` | `/api/products/alternative` | Full list |
+| `GET` | `/api/products/alternative/{id}` | Get by ID |
+| `POST` | `/api/products/alternative` | Create |
+| `PUT` | `/api/products/alternative/{id}` | Update |
+| `DELETE` | `/api/products/alternative/{id}` | Delete |
 
-Paths use the module prefix from `ConfigureModule` (these examples use `/api`) plus the `AddCRUD` route prefix (here, `/products`). **Convention:** pass a leading slash on every path you own (`ConfigureModule`, `AddCRUD`, and custom `MapGet` / `MapPost` templates) so routes stay consistent across modules and the library.
+Paths use the module prefix from `ConfigureModule` (these examples use `/api`) plus the `AddCRUD` route prefix (here, `/products/alternative`). **Convention:** pass a leading slash on every path you own (`ConfigureModule`, `AddCRUD`, and custom `MapGet` / `MapPost` templates) so routes stay consistent across modules and the library.
 
 ---
 
@@ -259,6 +255,39 @@ AddCRUD<Product, int>("/products", crud =>
 });
 ```
 
+**Validate custom endpoint requests with FluentValidation**
+
+Define your validator and apply `WithValidation<T>()` to the route handler.
+
+```csharp
+using FastSharp.Modules.Core;
+using FluentValidation;
+
+builder.Services.AddScoped<IValidator<UpdateProductStock>, UpdateProductStockValidator>();
+
+public record UpdateProductStock(int Id, int Quantity);
+
+public sealed class UpdateProductStockValidator : AbstractValidator<UpdateProductStock>
+{
+    public UpdateProductStockValidator()
+    {
+        RuleFor(x => x.Id).GreaterThan(0);
+        RuleFor(x => x.Quantity).NotEqual(0);
+    }
+}
+
+public sealed class UpdateProductsStock : IEndpoint
+{
+    public void Map(RouteGroupBuilder app)
+    {
+        app.MapPost("/products/update-stock", (UpdateProductStock request) => Results.NoContent())
+            .WithValidation<UpdateProductStock>();
+    }
+}
+```
+
+If no `IValidator<T>` is defined for the request type, the validation filter does nothing and the endpoint continues normally. See [Validation with FluentValidation](docs/validation.md).
+
 **Add custom endpoints to the same module**
 
 ```csharp
@@ -329,6 +358,7 @@ Each module is a self-contained unit: its routes, its DTOs, its custom endpoints
 
 - [Modular architecture](docs/architecture.md)
 - [Customization](docs/customization.md)
+- [Validation with FluentValidation](docs/validation.md)
 - [Assembly scanning](docs/assembly-scanning.md)
 - [Roadmap](docs/roadmap.md)
 - [How to FastSharp](docs/how-to-fastsharp.md)

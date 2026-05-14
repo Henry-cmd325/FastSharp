@@ -30,7 +30,7 @@ This file is written for code agents that need to understand, modify, or extend 
 
 ### Modules
 
-- `FastSharp.Modules/Module.cs`
+- `FastSharp.Modules/Core/Module.cs`
 - `Module` groups endpoints under a route prefix and supports custom-endpoint-only modules
 - `Module<TDbContext>` adds EF Core CRUD support
 - `ConfigureModule("/api", ...)` sets the base route group and shared metadata
@@ -46,7 +46,7 @@ This file is written for code agents that need to understand, modify, or extend 
 
 ### Custom endpoints
 
-- `FastSharp.Modules/IEndpoint.cs`
+- `FastSharp.Modules/Core/IEndpoint.cs`
 - `IEndpoint` is the implementation unit for explicit endpoint behavior
 - Implement `IEndpoint.Map(RouteGroupBuilder app)`
 - Register custom endpoints in a module with `Include<T>()`
@@ -91,7 +91,7 @@ Example from tests:
 - Use English for comments and documentation text
 - Prefer explicit endpoint registration with `Include<T>()` when possible
 - Do not frame the library as CRUD-first; frame it as modules + endpoints first, CRUD optional
-- Keep `how-to-fastsharp.md` prominent as the main guide for project structure and adoption paths
+- Keep `docs/how-to-fastsharp.md` prominent as the main guide for project structure and adoption paths
 - Keep changes minimal and aligned with the existing style
 
 ## Where to start, depending on the task
@@ -102,7 +102,7 @@ Example from tests:
 
 ### If you need project structure guidance
 
-- `how-to-fastsharp.md`
+- `docs/how-to-fastsharp.md`
 
 ### If you need the architectural intent
 
@@ -112,19 +112,23 @@ Example from tests:
 ### If you need configuration and DTO behavior
 
 - `docs/customization.md`
+- `docs/validation.md`
 - `FastSharp.Modules/Configuration/ICrudEndpoints.cs`
 - `FastSharp.Modules/Configuration/CRUDEndpoints.cs`
+- `FastSharp.Modules/Core/FastSharpExtensions.cs`
+- `FastSharp.Modules/Filters/ValidationFilter.cs`
 
 ### If you need runtime mapping behavior
 
-- `FastSharp.Modules/Module.cs`
+- `FastSharp.Modules/Core/Module.cs`
 - `FastSharp.Modules/DependencyInjection.cs`
-- `FastSharp.Modules/Endpoints/*.cs`
+- `FastSharp.Modules/Core/Endpoints/*.cs`
 
 ### If you need a working consumer example
 
 - `Samples/QuickStart/Program.cs`
 - `Samples/QuickStart/Modules/Products/ProductsModule.cs`
+- `Samples/QuickStart/Modules/Products/Endpoints/UpdateProductsStock.cs`
 - `Samples/QuickStart/Api.http`
 
 ### If you need a custom-endpoints-only example
@@ -143,11 +147,11 @@ Example from tests:
 
 - `FastSharp.Modules/DependencyInjection.cs`
   - assembly scanning and registration
-- `FastSharp.Modules/Module.cs`
+- `FastSharp.Modules/Core/Module.cs`
   - module composition, route grouping, CRUD integration
-- `FastSharp.Modules/IEndpoint.cs`
+- `FastSharp.Modules/Core/IEndpoint.cs`
   - custom endpoint contract
-- `FastSharp.Modules/IFastModule.cs`
+- `FastSharp.Modules/Core/IFastModule.cs`
   - internal module mapping contract
 - `FastSharp.Modules/Configuration/ICrudEndpoints.cs`
   - CRUD customization API surface
@@ -155,12 +159,12 @@ Example from tests:
   - CRUD configuration implementation
 - `FastSharp.Modules/Configuration/GenericEndpoints.cs`
   - enum for endpoint selection and disabling
-- `FastSharp.Modules/Endpoints/CreateEndpoint.cs`
-- `FastSharp.Modules/Endpoints/GetByIdEndpoint.cs`
-- `FastSharp.Modules/Endpoints/GetListEndpoint.cs`
-- `FastSharp.Modules/Endpoints/GetPagedEndpoint.cs`
-- `FastSharp.Modules/Endpoints/UpdateEndpoint.cs`
-- `FastSharp.Modules/Endpoints/DeleteEndpoint.cs`
+- `FastSharp.Modules/Core/Endpoints/CreateEndpoint.cs`
+- `FastSharp.Modules/Core/Endpoints/GetByIdEndpoint.cs`
+- `FastSharp.Modules/Core/Endpoints/GetListEndpoint.cs`
+- `FastSharp.Modules/Core/Endpoints/GetPagedEndpoint.cs`
+- `FastSharp.Modules/Core/Endpoints/UpdateEndpoint.cs`
+- `FastSharp.Modules/Core/Endpoints/DeleteEndpoint.cs`
   - concrete generated endpoint implementations
 
 ### Shared models
@@ -181,6 +185,8 @@ Example from tests:
   - example module with standard CRUD, alternate CRUD, and custom endpoint inclusion
 - `Samples/QuickStart/Modules/Products/Endpoints/CheckProductStock.cs`
   - sample custom endpoint
+- `Samples/QuickStart/Modules/Products/Endpoints/UpdateProductsStock.cs`
+  - sample custom endpoint with FluentValidation integration
 - `Samples/QuickStart/Api.http`
   - executable sample requests
 
@@ -199,7 +205,7 @@ Likely files:
 
 - `FastSharp.Modules/Configuration/ICrudEndpoints.cs`
 - `FastSharp.Modules/Configuration/CRUDEndpoints.cs`
-- one or more files under `FastSharp.Modules/Endpoints/`
+- one or more files under `FastSharp.Modules/Core/Endpoints/`
 - tests in `FastSharp.Tests/`
 
 ### Change module discovery or mapping
@@ -207,7 +213,7 @@ Likely files:
 Likely files:
 
 - `FastSharp.Modules/DependencyInjection.cs`
-- `FastSharp.Modules/Module.cs`
+- `FastSharp.Modules/Core/Module.cs`
 - tests in `FastSharp.Tests/`
 
 ### Improve documentation or examples
@@ -215,7 +221,7 @@ Likely files:
 Likely files:
 
 - `README.md`
-- `how-to-fastsharp.md`
+- `docs/how-to-fastsharp.md`
 - `docs/*.md`
 - `Samples/QuickStart/*`
 
@@ -251,9 +257,9 @@ Likely files:
 ## Best first reads for an agent
 
 1. `README.md`
-2. `FastSharp.Modules/Module.cs`
+2. `FastSharp.Modules/Core/Module.cs`
 3. `FastSharp.Modules/DependencyInjection.cs`
 4. `FastSharp.Modules/Configuration/ICrudEndpoints.cs`
-5. `Samples/QuickStart/Modules/Products/ProductsModule.cs`
-6. `FastSharp.Tests/FastSharpEndpointsTests.cs`
-7. `FastSharp.Tests/Modules/NoContextModule.cs`
+5. `docs/validation.md`
+6. `Samples/QuickStart/Modules/Products/ProductsModule.cs`
+7. `FastSharp.Tests/FastSharpEndpointsTests.cs`

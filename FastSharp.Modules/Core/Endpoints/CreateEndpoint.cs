@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mapster;
 
-namespace FastSharp.Modules.Endpoints;
+namespace FastSharp.Modules.Core.Endpoints;
 
 public class CreateEndpoint<TDbContext, TEntity, TKey>() : IGenericEndpoint
     where TEntity : class

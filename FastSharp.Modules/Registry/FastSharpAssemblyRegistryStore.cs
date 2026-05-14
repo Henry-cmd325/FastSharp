@@ -1,3 +1,4 @@
+using FastSharp.Modules.Core;
 using System.Collections.Concurrent;
 using System.Reflection;
 

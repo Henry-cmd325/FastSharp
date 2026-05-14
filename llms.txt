@@ -157,6 +157,24 @@ not:
 
 unless the endpoint itself includes `/products` in its route template.
 
+## Validation with FluentValidation
+
+FastSharp includes a small validation integration for custom endpoints through `WithValidation<T>()`.
+
+Use it when the developer wants to:
+
+- validate a request DTO or record bound in a custom `IEndpoint`
+- return `400 Bad Request` with a standard `ValidationProblem` payload when the request is invalid
+- keep request validation close to the endpoint contract while still using FluentValidation
+
+Important rules:
+
+- `WithValidation<T>()` is exposed from `FastSharp.Modules.Core`
+- the validated type must match the bound request argument type
+- the validator must be registered in DI as `IValidator<T>`
+- FastSharp does not auto-scan or auto-register validators
+- if no validator is registered, the filter does nothing and the request continues normally
+
 ## Typical usage flow
 
 To help a developer adopt FastSharp, generate code following this sequence:
@@ -226,11 +244,13 @@ Prefer examples that are:
 ## Good entry points to understand usage
 
 - `README.md`
-- `how-to-fastsharp.md`
+- `docs/how-to-fastsharp.md`
 - `docs/customization.md`
+- `docs/validation.md`
 - `docs/architecture.md`
 - `Samples/QuickStart/Program.cs`
 - `Samples/QuickStart/Modules/Products/ProductsModule.cs`
+- `Samples/QuickStart/Modules/Products/Endpoints/UpdateProductsStock.cs`
 - `Samples/QuickStart/Api.http`
 
 ## Recommended behavior for an AI assistant
@@ -243,7 +263,8 @@ When helping a developer use FastSharp:
 - prefer `Module<TDbContext>` when the request includes EF Core persistence
 - use DTOs when the request suggests separation between persistence and API contracts
 - include the final route shape when explaining generated endpoints
-- use `how-to-fastsharp.md` when the developer needs guidance on how to structure a FastSharp project
+- use `docs/how-to-fastsharp.md` when the developer needs guidance on how to structure a FastSharp project
+- mention `WithValidation<T>()` and `IValidator<T>` registration when the developer asks for validated custom endpoints
 - mention `AddFastSharpEndpoints()` and `MapFastSharpEndpoints()` in setup guidance
 
 ## Short summary
