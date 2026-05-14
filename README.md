@@ -263,8 +263,6 @@ Define your validator and apply `WithValidation<T>()` to the route handler.
 using FastSharp.Modules.Core;
 using FluentValidation;
 
-builder.Services.AddScoped<IValidator<UpdateProductStock>, UpdateProductStockValidator>();
-
 public record UpdateProductStock(int Id, int Quantity);
 
 public sealed class UpdateProductStockValidator : AbstractValidator<UpdateProductStock>
