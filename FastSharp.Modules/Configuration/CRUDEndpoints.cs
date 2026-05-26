@@ -31,7 +31,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         if (idSelector == null && typeof(IModel<TKey>).IsAssignableFrom(typeof(TEntity)))
             IdSelector = e => ((IModel<TKey>)e).Id;
         else
-            IdSelector = idSelector ?? throw new ArgumentException("Debes proveer un ID selector o implementar IModel");
+            IdSelector = idSelector ?? throw new ArgumentException("You must provide an ID selector or implement IModel");
 
         // Compile the predicate creation logic once during initialization
         var parameter = IdSelector.Parameters[0];

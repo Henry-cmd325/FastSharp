@@ -108,7 +108,7 @@ public class ProductsModule : Module<ApiDbContext>
             .WithDescription("Endpoints of products module")
         );
 
-// Advanced example: use a manual Id selector for entities that do not implement IModel<int>.
+        // Use a manual Id selector for entities that do not implement IModel<int>.
         AddCRUD<Product, int>("/products/alternative", p => p.Id, crud =>
         {
             crud.DisableEndpoint(GenericEndpoint.GetList);
