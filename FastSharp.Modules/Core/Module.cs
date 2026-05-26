@@ -84,7 +84,7 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
 
     /// <summary>
     /// Adds a set of CRUD endpoints for a specific entity.
-    /// Each endpoint (Get, GetList, GetPaged, Create, Update, Delete) can be configured individually,
+    /// Each endpoint (Get, GetList, Create, Update, Delete) can be configured individually,
     /// or a shared configuration can be applied to the entire CRUD group.
     /// </summary>
     /// <typeparam name="TEntity">The entity type.</typeparam>
@@ -100,7 +100,7 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
 
     /// <summary>
     /// Adds a set of CRUD endpoints for a specific entity, with a custom primary key selector.
-    /// Each endpoint (Get, GetList, GetPaged, Create, Update, Delete) can be configured individually,
+    /// Each endpoint (Get, GetList, Create, Update, Delete) can be configured individually,
     /// or a shared configuration can be applied to the entire CRUD group.
     /// </summary>
     /// <typeparam name="TEntity"></typeparam>

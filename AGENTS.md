@@ -69,8 +69,8 @@ Given:
 
 FastSharp generates:
 
-- `GET /api/products/paged`
-- `GET /api/products`
+- `GET /api/products` (returns `List<Product>`; add `?page=1&pageSize=10` for `PagedResult<Product>`)
+- `GET /api/products/{id}`
 - `GET /api/products/{id}`
 - `POST /api/products`
 - `PUT /api/products/{id}`
@@ -162,7 +162,6 @@ Example from tests:
 - `FastSharp.Modules/Core/Endpoints/CreateEndpoint.cs`
 - `FastSharp.Modules/Core/Endpoints/GetByIdEndpoint.cs`
 - `FastSharp.Modules/Core/Endpoints/GetListEndpoint.cs`
-- `FastSharp.Modules/Core/Endpoints/GetPagedEndpoint.cs`
 - `FastSharp.Modules/Core/Endpoints/UpdateEndpoint.cs`
 - `FastSharp.Modules/Core/Endpoints/DeleteEndpoint.cs`
   - concrete generated endpoint implementations

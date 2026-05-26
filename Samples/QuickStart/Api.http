@@ -22,7 +22,7 @@ Content-Type: application/json
 ###
 
 ### Products - get paged
-GET {{Api_HostAddress}}/api/products/paged?page=1&pageSize=10
+GET {{Api_HostAddress}}/api/products?page=1&pageSize=10
 Accept: application/json
 
 ###
@@ -52,7 +52,7 @@ Content-Type: application/json
 ###
 
 ### Alternative products - get paged
-GET {{Api_HostAddress}}/api/products/alternative/paged?page=1&pageSize=10
+GET {{Api_HostAddress}}/api/products/alternative?page=1&pageSize=10
 Accept: application/json
 
 ###

@@ -236,7 +236,7 @@ public class FastSharpEndpointsTests
             await context.SaveChangesAsync();
         }
 
-        var response = await client.GetAsync("/api/sample/paged?page=1&pageSize=2");
+        var response = await client.GetAsync("/api/sample?page=1&pageSize=2");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<PagedResult<TestModel>>();
@@ -297,7 +297,7 @@ public class FastSharpEndpointsTests
         var listBody = await listResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("name", listBody, StringComparison.OrdinalIgnoreCase);
 
-        var pagedResponse = await client.GetAsync("/api/dto-dual/paged?page=1&pageSize=10");
+        var pagedResponse = await client.GetAsync("/api/dto-dual?page=1&pageSize=10");
         Assert.Equal(HttpStatusCode.OK, pagedResponse.StatusCode);
         var pagedResult = await pagedResponse.Content.ReadFromJsonAsync<PagedResult<TestModelResponseDto>>();
         Assert.NotNull(pagedResult);
@@ -335,7 +335,7 @@ public class FastSharpEndpointsTests
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         var listBody = await listResponse.Content.ReadAsStringAsync();
 
-        var pagedResponse = await client.GetAsync("/api/id-selector/paged?page=1&pageSize=10");
+        var pagedResponse = await client.GetAsync("/api/id-selector?page=1&pageSize=10");
         Assert.Equal(HttpStatusCode.OK, pagedResponse.StatusCode);
 
         var pagedResult = await pagedResponse.Content.ReadFromJsonAsync<PagedResult<TestModelWitoutInterface>>();

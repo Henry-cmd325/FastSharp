@@ -26,9 +26,9 @@ public class ProductsModule : Module<ApiDbContext>
         {
             crud.DisableEndpoint(GenericEndpoint.GetList);
             
-            crud.GetPaged<ProductDto>((endpoint) => endpoint
-                .WithDescription("Retrieves a paginated list of products")
-                .WithTags("GetPaged")
+            crud.GetList<ProductDto>((endpoint) => endpoint
+                .WithDescription("Retrieves a list of products (with optional ?page and ?pageSize params for pagination)")
+                .WithTags("GetList")
             );
 
             crud.Create<ProductRequest, ProductDto>((endpoint) => endpoint

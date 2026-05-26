@@ -47,7 +47,7 @@ public class ProductsModule : Module<YourDbContext>
 }
 ```
 
-The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `GetPaged`, `Create`, `Update`, and `Delete` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This gives access to Minimal APIs extension methods like `WithOpenApi`, `RequireAuthorization`, `Accepts`, and `Produces`.
+The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `Create`, `Update`, and `Delete` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This gives access to Minimal APIs extension methods like `WithOpenApi`, `RequireAuthorization`, `Accepts`, and `Produces`.
 
 ---
 
@@ -144,8 +144,7 @@ AddCRUD<Product, int>("/products", crud => crud
 
 Resulting contracts:
 - `GET /{id}` -> `ProductDto`
-- `GET /` -> `List<ProductDto>`
-- `GET /paged` -> `PagedResult<ProductDto>`
+- `GET /` -> `List<ProductDto>` (add `?page=1&pageSize=10` for `PagedResult<ProductDto>`)
 - `POST /` -> request `ProductDto`, response `ProductDto`
 - `PUT /{id}` -> request `ProductDto`
 
@@ -158,8 +157,7 @@ AddCRUD<Product, int>("/products", options => options
 
 Resulting contracts:
 - `GET /{id}` -> `ProductReadDto`
-- `GET /` -> `List<ProductReadDto>`
-- `GET /paged` -> `PagedResult<ProductReadDto>`
+- `GET /` -> `List<ProductReadDto>` (add `?page=1&pageSize=10` for `PagedResult<ProductReadDto>`)
 - `POST /` -> request `ProductWriteDto`, response `ProductReadDto`
 - `PUT /{id}` -> request `ProductWriteDto`
 

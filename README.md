@@ -113,9 +113,9 @@ public class ProductsModule : Module<ApiDbContext>
         {
             crud.DisableEndpoint(GenericEndpoint.GetList);
             
-            crud.GetPaged<ProductDto>((endpoint) => endpoint
-                .WithDescription("Retrieves a paginated list of products")
-                .WithTags("GetPaged")
+            crud.GetList<ProductDto>((endpoint) => endpoint
+                .WithDescription("Retrieves a list of products (use ?page and ?pageSize for pagination)")
+                .WithTags("GetList")
             );
 
             crud.Create<ProductRequest, ProductDto>((endpoint) => endpoint
@@ -175,8 +175,7 @@ Run the project and open `/openapi/v1.json` — you'll see the generated CRUD en
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| `GET` | `/api/products/alternative/paged` | Paginated list |
-| `GET` | `/api/products/alternative` | Full list |
+| `GET` | `/api/products/alternative` | Full list (add `?page=1&pageSize=10` for paginated results) |
 | `GET` | `/api/products/alternative/{id}` | Get by ID |
 | `POST` | `/api/products/alternative` | Create |
 | `PUT` | `/api/products/alternative/{id}` | Update |
