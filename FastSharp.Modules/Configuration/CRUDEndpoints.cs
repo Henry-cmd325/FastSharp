@@ -15,7 +15,6 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     internal IGenericEndpoint GetByIdEndpoint; 
     internal IGenericEndpoint GetListEndpoint; 
-    internal IGenericEndpoint GetPagedEndpoint; 
     internal IGenericEndpoint CreateEndpoint; 
     internal IGenericEndpoint UpdateEndpoint; 
     internal IGenericEndpoint DeleteEndpoint;
@@ -44,8 +43,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         };
 
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey>();
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey>(IdSelector);
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey>(IdSelector);
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey>();
         UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
         DeleteEndpoint = new DeleteEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
@@ -61,7 +59,6 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
     {
         yield return GetByIdEndpoint;
         yield return GetListEndpoint;
-        yield return GetPagedEndpoint;
         yield return CreateEndpoint;
         yield return UpdateEndpoint;
         yield return DeleteEndpoint;
@@ -69,7 +66,6 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     private IGenericEndpoint? GetEndpoint(GenericEndpoint endpointName) => endpointName switch
     {
-        GenericEndpoint.GetPaged => GetPagedEndpoint,
         GenericEndpoint.GetList => GetListEndpoint,
         GenericEndpoint.GetById => GetByIdEndpoint,
         GenericEndpoint.Create => CreateEndpoint,
@@ -111,11 +107,8 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
         ConfigureEndpoint(GetByIdEndpoint, configure);
 
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>();
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
         ConfigureEndpoint(GetListEndpoint, configure);
-
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
-        ConfigureEndpoint(GetPagedEndpoint, configure);
 
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>();
         ConfigureEndpoint(CreateEndpoint, configure);
@@ -131,11 +124,8 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TResponse>(PredicateFactory);
         ConfigureEndpoint(GetByIdEndpoint, configure);
 
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TResponse>();
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TResponse>(IdSelector);
         ConfigureEndpoint(GetListEndpoint, configure);
-
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TResponse>(IdSelector);
-        ConfigureEndpoint(GetPagedEndpoint, configure);
 
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>();
         ConfigureEndpoint(CreateEndpoint, configure);
@@ -158,17 +148,8 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     public void GetList<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>();
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
         ConfigureEndpoint(GetListEndpoint, configure);
-    }
-
-    public void GetPaged(Action<RouteHandlerBuilder>? configure = null) =>
-        ConfigureEndpoint(GetPagedEndpoint, configure);
-
-    public void GetPaged<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
-    {
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
-        ConfigureEndpoint(GetPagedEndpoint, configure);
     }
 
     public void Create(Action<RouteHandlerBuilder>? configure = null) =>
