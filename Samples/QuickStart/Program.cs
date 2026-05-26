@@ -9,7 +9,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddDbContext<ApiDbContext>(opt =>
     opt.UseInMemoryDatabase("fastsharp-demo"));
-builder.Services.AddScoped<IValidator<UpdateProductsStock.UpdateProductStock>, UpdateProductsStock.UpdateProductStockValidator>();
 
 builder.Services.AddFastSharpEndpoints();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

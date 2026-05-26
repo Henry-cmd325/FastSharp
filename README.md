@@ -44,6 +44,7 @@ dotnet add package FastSharp.Models
 
 > `FastSharp.Modules` is the core. `FastSharp.Models` contains only the model interfaces — add it to projects that don't need the full core.
 
+⚠️ FastSharp is currently in **beta**. APIs may change between versions.
 ---
 
 ## Quick Start
@@ -262,8 +263,6 @@ Define your validator and apply `WithValidation<T>()` to the route handler.
 ```csharp
 using FastSharp.Modules.Core;
 using FluentValidation;
-
-builder.Services.AddScoped<IValidator<UpdateProductStock>, UpdateProductStockValidator>();
 
 public record UpdateProductStock(int Id, int Quantity);
 
