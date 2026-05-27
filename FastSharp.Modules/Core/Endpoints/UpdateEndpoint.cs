@@ -62,7 +62,7 @@ public class UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expressi
                     [FromBody] TDto updatedDto,
                     [FromServices] TDbContext context) =>
                 {
-                    var entity = await context.Set<TEntity>().FindAsync(id);
+                    var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
                     if (entity is null)
                         return TypedResults.NotFound();
 

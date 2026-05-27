@@ -26,7 +26,7 @@ public class GetByIdEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fu
         {
             var builder = app.MapGet("/{id}", async Task<Results<Ok<TEntity>, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
             {
-                var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
+                var entity = await context.Set<TEntity>().AsNoTracking().Where(_predicateFactory(id)).FirstOrDefaultAsync();
                 if (entity is null)
                     return TypedResults.NotFound();
 

@@ -52,7 +52,7 @@ public class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntity,
                     return TypedResults.Ok(new PagedResult<TEntity>(list, totalItems, p, ps));
                 }
 
-                var allItems = await context.Set<TEntity>().ToListAsync();
+                var allItems = await context.Set<TEntity>().AsNoTracking().ToListAsync();
                 return TypedResults.Ok(allItems);
             });
 

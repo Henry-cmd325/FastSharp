@@ -12,6 +12,16 @@ public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     public void DisableEndpoint(GenericEndpoint endpointName);
 
     /// <summary>
+    /// Configures all CRUD endpoints with the specified action on each endpoint's route handler builder.
+    /// </summary>
+    /// <remarks>
+    /// This allows shared metadata (e.g. authorization, validation) to be applied to every generated CRUD endpoint
+    /// without requiring a DTO. Note that this overload does not replace endpoint types — it only decorates them.
+    /// </remarks>
+    /// <param name="configure">An action that configures each endpoint's RouteHandlerBuilder.</param>
+    public void ConfigureAll(Action<RouteHandlerBuilder> configure);
+
+    /// <summary>
     /// Configures all CRUD endpoints to use a single DTO type.
     /// </summary>
     /// <remarks>
@@ -49,6 +59,7 @@ public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     /// <param name="configure">An optional action that configures the route group. If provided, it receives a RouteGroupBuilder instance to
     /// define the routes within the group.</param>
     public void ConfigureGroup(Action<RouteGroupBuilder>? configure = null);
+
     public void Get(Action<RouteHandlerBuilder>? configure = null);
     public void Get<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class;
     public void GetList(Action<RouteHandlerBuilder>? configure = null);
