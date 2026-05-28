@@ -1,5 +1,6 @@
 ﻿using FastSharp.Models;
 using FastSharp.Modules.Core.Endpoints;
+using FastSharp.Modules.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -179,12 +180,46 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
     public void Delete(Action<RouteHandlerBuilder>? configure = null) =>
         ConfigureEndpoint(DeleteEndpoint, configure);
 
-    public void Map(RouteGroupBuilder group)
+    public void Map(RouteGroupBuilder group, ILogger logger, string moduleRoutePrefix)
     {
+        var entityName = typeof(TEntity).Name;
+        var route = CombineRoute(moduleRoutePrefix, RoutePrefix);
+        var enabledVerbs = GetEnabledVerbs();
+
+        FastSharpLogger.LogMappingCrudEndpoints(logger, entityName, route, enabledVerbs);
+
         group = group.MapGroup(RoutePrefix);
         ConfigGroup?.Invoke(group);
 
         foreach (var endpoint in GetAllEndpoints())
             endpoint.Map(group, ConfigAll);
+    }
+
+    private static string CombineRoute(string moduleRoutePrefix, string routePrefix)
+    {
+        var combined = $"{moduleRoutePrefix.TrimEnd('/')}{routePrefix}";
+        return combined.StartsWith('/') ? combined : $"/{combined}";
+    }
+
+    private string GetEnabledVerbs()
+    {
+        var verbs = new List<string>(5);
+
+        if (GetListEndpoint.IsActive)
+            verbs.Add("GET (list)");
+
+        if (GetByIdEndpoint.IsActive)
+            verbs.Add("GET (by id)");
+
+        if (CreateEndpoint.IsActive)
+            verbs.Add("POST");
+
+        if (UpdateEndpoint.IsActive)
+            verbs.Add("PUT");
+
+        if (DeleteEndpoint.IsActive)
+            verbs.Add("DELETE");
+
+        return verbs.Count == 0 ? "none" : string.Join(", ", verbs);
     }
 }

@@ -1,6 +1,8 @@
 ﻿using FastSharp.Models;
 using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Linq.Expressions;
 
 namespace FastSharp.Modules.Core;
@@ -20,12 +22,18 @@ public abstract class Module : IFastModule
 
     protected virtual void MapEndpoints(IEndpointRouteBuilder app)
     {
+        var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
+            ?? NullLogger.Instance;
+
+        FastSharpLogger.LogMappingModule(logger, GetType().Name, urlPrefix);
+
         var group = app.MapGroup(urlPrefix);
         _groupConfiguration?.Invoke(group);
         using var scope = app.ServiceProvider.CreateScope();
         var provider = scope.ServiceProvider;
         foreach (var endpointType in _moduleEndpoints)
         {
+            FastSharpLogger.LogMappingCustomEndpoint(logger, endpointType.Name, urlPrefix);
             var endpoint = (IEndpoint)provider.GetRequiredService(endpointType);
             endpoint.Map(group);
         }
@@ -63,13 +71,18 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
 
     protected override void MapEndpoints(IEndpointRouteBuilder app)
     {
+        var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
+            ?? NullLogger.Instance;
+
+        FastSharpLogger.LogMappingModule(logger, GetType().Name, urlPrefix);
+
         var group = app.MapGroup(urlPrefix);
 
         _groupConfiguration?.Invoke(group);
 
         foreach (var crudOptions in _crudOptionsList)
         {
-            crudOptions.Map(group);
+            crudOptions.Map(group, logger, urlPrefix);
         }
 
         using var scope = app.ServiceProvider.CreateScope();
@@ -77,6 +90,7 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
 
         foreach (var endpointType in _moduleEndpoints)
         {
+            FastSharpLogger.LogMappingCustomEndpoint(logger, endpointType.Name, urlPrefix);
             var endpoint = (IEndpoint)provider.GetRequiredService(endpointType);
             endpoint.Map(group);
         }

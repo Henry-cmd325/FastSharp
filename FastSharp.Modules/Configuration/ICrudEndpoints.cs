@@ -1,5 +1,6 @@
 ﻿using FastSharp.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FastSharp.Modules.Configuration;
 
@@ -78,5 +79,5 @@ public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     public void Update(Action<RouteHandlerBuilder>? configure = null);
     public void Update<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class;
     public void Delete(Action<RouteHandlerBuilder>? configure = null);
-    internal void Map(RouteGroupBuilder group);
+    internal void Map(RouteGroupBuilder group, ILogger logger, string moduleRoutePrefix);
 }

@@ -1,4 +1,5 @@
 ﻿using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Logging;
 using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,10 @@ public class UpdateEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
 
     protected readonly Func<TKey, Expression<Func<TEntity, bool>>> _predicateFactory = predicateFactory;
 
+    protected static readonly string EntityName = typeof(TEntity).Name;
+
+    public bool IsActive => _options.Active;
+
     public void Configure(EndpointOptions options)
     {
         _options = options;
@@ -29,15 +34,34 @@ public class UpdateEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
                 async Task<Results<NoContent, NotFound, BadRequest<string>>> (
                     [FromRoute] TKey id,
                     [FromBody] TEntity updatedEntity,
-                    [FromServices] TDbContext context) =>
+                    [FromServices] TDbContext context,
+                    [FromServices] ILogger<FastSharpEngine> logger) =>
                 {
-                    var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
-                    if (entity is null)
-                        return TypedResults.NotFound();
+                    using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
+                    {
+                        FastSharpLogger.LogUpdatingEntity(logger, EntityName, LoggingScope.FormatId(id));
 
-                    context.Entry(entity).CurrentValues.SetValues(updatedEntity);
-                    await context.SaveChangesAsync();
-                    return TypedResults.NoContent();
+                        try
+                        {
+                            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
+                            if (entity is null)
+                            {
+                                FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+                                return TypedResults.NotFound();
+                            }
+
+                            context.Entry(entity).CurrentValues.SetValues(updatedEntity);
+                            await context.SaveChangesAsync();
+
+                            FastSharpLogger.LogUpdatedEntity(logger, EntityName, LoggingScope.FormatId(id));
+                            return TypedResults.NoContent();
+                        }
+                        catch (DbUpdateException ex)
+                        {
+                            FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Update");
+                            throw;
+                        }
+                    }
                 });
 
             allOptions.Builder?.Invoke(builder);
@@ -60,15 +84,34 @@ public class UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expressi
                 async Task<Results<NoContent, NotFound, BadRequest<string>>> (
                     [FromRoute] TKey id,
                     [FromBody] TDto updatedDto,
-                    [FromServices] TDbContext context) =>
+                    [FromServices] TDbContext context,
+                    [FromServices] ILogger<FastSharpEngine> logger) =>
                 {
-                    var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
-                    if (entity is null)
-                        return TypedResults.NotFound();
+                    using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
+                    {
+                        FastSharpLogger.LogUpdatingEntity(logger, EntityName, LoggingScope.FormatId(id));
 
-                    updatedDto.Adapt(entity);
-                    await context.SaveChangesAsync();
-                    return TypedResults.NoContent();
+                        try
+                        {
+                            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
+                            if (entity is null)
+                            {
+                                FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+                                return TypedResults.NotFound();
+                            }
+
+                            updatedDto.Adapt(entity);
+                            await context.SaveChangesAsync();
+
+                            FastSharpLogger.LogUpdatedEntity(logger, EntityName, LoggingScope.FormatId(id));
+                            return TypedResults.NoContent();
+                        }
+                        catch (DbUpdateException ex)
+                        {
+                            FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Update");
+                            throw;
+                        }
+                    }
                 });
 
             allOptions.Builder?.Invoke(builder);
@@ -76,4 +119,3 @@ public class UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expressi
         }
     }
 }
-
