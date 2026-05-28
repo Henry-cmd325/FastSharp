@@ -1,4 +1,5 @@
 ﻿using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Logging;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,12 @@ public class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
 {
     protected EndpointOptions _options = new();
 
+    protected readonly Func<TKey, Expression<Func<TEntity, bool>>> PredicateFactory = predicateFactory;
+
+    private static readonly string EntityName = typeof(TEntity).Name;
+
+    public bool IsActive => _options.Active;
+
     public void Configure(EndpointOptions options)
     {
         _options = options;
@@ -21,17 +28,36 @@ public class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
     {
         if (_options.Active)
         {
-            var builder = app.MapDelete("/{id}", async Task<Results<NoContent, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
+            var builder = app.MapDelete("/{id}", async Task<Results<NoContent, NotFound>> (
+                [FromRoute] TKey id,
+                [FromServices] TDbContext context,
+                [FromServices] ILogger<FastSharpEngine> logger) =>
             {
-                var entity = await context.Set<TEntity>().Where(predicateFactory(id)).FirstOrDefaultAsync();
-                if (entity is null)
+                using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
                 {
-                    return TypedResults.NotFound();
-                }
+                    FastSharpLogger.LogDeletingEntity(logger, EntityName, LoggingScope.FormatId(id));
 
-                context.Set<TEntity>().Remove(entity);
-                await context.SaveChangesAsync();
-                return TypedResults.NoContent();
+                    try
+                    {
+                        var entity = await context.Set<TEntity>().Where(PredicateFactory(id)).FirstOrDefaultAsync();
+                        if (entity is null)
+                        {
+                            FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+                            return TypedResults.NotFound();
+                        }
+
+                        context.Set<TEntity>().Remove(entity);
+                        await context.SaveChangesAsync();
+
+                        FastSharpLogger.LogDeletedEntity(logger, EntityName, LoggingScope.FormatId(id));
+                        return TypedResults.NoContent();
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Delete");
+                        throw;
+                    }
+                }
             });
 
             allOptions.Builder?.Invoke(builder);
@@ -39,4 +65,3 @@ public class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
         }
     }
 }
-

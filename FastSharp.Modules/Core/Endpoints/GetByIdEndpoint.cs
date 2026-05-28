@@ -1,4 +1,5 @@
 ﻿using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Logging;
 using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,10 @@ public class GetByIdEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fu
 
     protected readonly Func<TKey, Expression<Func<TEntity, bool>>> _predicateFactory = predicateFactory;
 
+    protected static readonly string EntityName = typeof(TEntity).Name;
+
+    public bool IsActive => _options.Active;
+
     public void Configure(EndpointOptions options)
     {
         _options = options;
@@ -24,13 +29,25 @@ public class GetByIdEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fu
     {
         if (_options.Active)
         {
-            var builder = app.MapGet("/{id}", async Task<Results<Ok<TEntity>, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
+            var builder = app.MapGet("/{id}", async Task<Results<Ok<TEntity>, NotFound>> (
+                [FromRoute] TKey id,
+                [FromServices] TDbContext context,
+                [FromServices] ILogger<FastSharpEngine> logger) =>
             {
-                var entity = await context.Set<TEntity>().AsNoTracking().Where(_predicateFactory(id)).FirstOrDefaultAsync();
-                if (entity is null)
-                    return TypedResults.NotFound();
+                using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
+                {
+                    FastSharpLogger.LogGetById(logger, EntityName, LoggingScope.FormatId(id));
 
-                return TypedResults.Ok(entity);
+                    var entity = await context.Set<TEntity>().AsNoTracking().Where(_predicateFactory(id)).FirstOrDefaultAsync();
+                    if (entity is null)
+                    {
+                        FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+                        return TypedResults.NotFound();
+                    }
+
+                    FastSharpLogger.LogGetByIdSuccess(logger, EntityName, LoggingScope.FormatId(id));
+                    return TypedResults.Ok(entity);
+                }
             });
 
             allOptions.Builder?.Invoke(builder);
@@ -49,18 +66,30 @@ public class GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Express
     {
         if (_options.Active)
         {
-            var builder = app.MapGet("/{id}", async Task<Results<Ok<TDto>, NotFound>> ([FromRoute] TKey id, [FromServices] TDbContext context) =>
+            var builder = app.MapGet("/{id}", async Task<Results<Ok<TDto>, NotFound>> (
+                [FromRoute] TKey id,
+                [FromServices] TDbContext context,
+                [FromServices] ILogger<FastSharpEngine> logger) =>
             {
-                var entity = await context.Set<TEntity>()
-                    .AsNoTracking()
-                    .Where(_predicateFactory(id))
-                    .ProjectToType<TDto>()
-                    .FirstOrDefaultAsync();
+                using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
+                {
+                    FastSharpLogger.LogGetById(logger, EntityName, LoggingScope.FormatId(id));
 
-                if (entity is null)
-                    return TypedResults.NotFound();
+                    var entity = await context.Set<TEntity>()
+                        .AsNoTracking()
+                        .Where(_predicateFactory(id))
+                        .ProjectToType<TDto>()
+                        .FirstOrDefaultAsync();
 
-                return TypedResults.Ok(entity);
+                    if (entity is null)
+                    {
+                        FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+                        return TypedResults.NotFound();
+                    }
+
+                    FastSharpLogger.LogGetByIdSuccess(logger, EntityName, LoggingScope.FormatId(id));
+                    return TypedResults.Ok(entity);
+                }
             });
 
             allOptions.Builder?.Invoke(builder);

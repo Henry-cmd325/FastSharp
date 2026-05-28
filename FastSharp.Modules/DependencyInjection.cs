@@ -1,5 +1,7 @@
-﻿using FastSharp.Modules.Registry;
+﻿using FastSharp.Modules.Logging;
+using FastSharp.Modules.Registry;
 using FluentValidation;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Reflection;
 
 namespace FastSharp.Modules;
@@ -42,10 +44,21 @@ public static class DependencyInjection
             assemblies = [Assembly.GetCallingAssembly()];
         }
 
-        foreach (var assembly in assemblies)
+        var distinctAssemblies = assemblies.Distinct().ToArray();
+        var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
+            ?? NullLogger.Instance;
+
+        FastSharpLogger.LogStartingModuleScan(logger, distinctAssemblies.Length);
+
+        foreach (var assembly in distinctAssemblies)
         {
+            var assemblyName = assembly.GetName().Name ?? assembly.FullName ?? "unknown";
+            FastSharpLogger.LogScanningAssembly(logger, assemblyName);
+
             var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(assembly);
             registry.MapEndpoints(app);
         }
+
+        FastSharpLogger.LogCompletedModuleScan(logger);
     }
 }

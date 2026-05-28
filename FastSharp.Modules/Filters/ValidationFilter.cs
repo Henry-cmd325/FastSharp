@@ -1,9 +1,12 @@
 ﻿using FluentValidation;
+using FastSharp.Modules.Logging;
 
 namespace FastSharp.Modules.Filters;
 
 public class ValidationFilter<T> : IEndpointFilter where T : class
 {
+    private static readonly string EntityName = typeof(T).Name;
+
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var validator = context.HttpContext.RequestServices.GetService<IValidator<T>>();
@@ -22,6 +25,12 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
 
         if (!validationResult.IsValid)
         {
+            var logger = context.HttpContext.RequestServices.GetService<ILogger<FastSharpEngine>>();
+            if (logger is not null)
+            {
+                FastSharpLogger.LogValidationFailed(logger, EntityName);
+            }
+
             return Results.ValidationProblem(validationResult.ToDictionary());
         }
 
