@@ -6,16 +6,16 @@ namespace FastSharp.Modules.Registry;
 
 public static class FastSharpAssemblyRegistryStore
 {
-    private static readonly ConcurrentDictionary<Assembly, IFastSharpAssemblyRegistry> Registries = new();
+    private static readonly ConcurrentDictionary<Assembly, IFastSharpAssemblyRegistry> _registries = new();
 
     public static void Register(IFastSharpAssemblyRegistry registry)
     {
-        Registries[registry.Assembly] = registry;
+        _registries[registry.Assembly] = registry;
     }
 
     public static bool TryGetRegistry(Assembly assembly, out IFastSharpAssemblyRegistry? registry)
     {
-        return Registries.TryGetValue(assembly, out registry);
+        return _registries.TryGetValue(assembly, out registry);
     }
 
     public static IFastSharpAssemblyRegistry GetRequiredRegistry(Assembly assembly)

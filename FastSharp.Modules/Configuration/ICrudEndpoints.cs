@@ -1,6 +1,5 @@
-﻿using FastSharp.Models;
+using FastSharp.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace FastSharp.Modules.Configuration;
 
@@ -50,7 +49,7 @@ public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     /// <typeparam name="TResponse">The DTO type used for read operations.</typeparam>
     /// <param name="configure">Optional endpoint configuration applied to all mapped CRUD handlers.</param>
     public void ConfigureAll<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class;
-    
+
     /// <summary>
     /// Configures the route group using the specified configuration action for all the endpoints of the generic CRUD.
     /// </summary>

@@ -1,4 +1,4 @@
-﻿using Api.Context;
+using Api.Context;
 using Api.Context.Models;
 using Api.Modules.Products.Dtos;
 using Api.Modules.Products.Endpoints;
@@ -19,13 +19,13 @@ public class ProductsModule : Module<ApiDbContext>
         // Simplest way: Automatically maps all standard CRUD operations to ProductDto.
         // If your model implements IModel, FastSharp handles the Id selection automatically.
         AddCRUD<Product, int>("/products", crud => crud.ConfigureAll<ProductDto>());
-        
+
         // Advanced: Full control over each endpoint.
         // You can pass a manual Id selector (p => p.Id) for existing models that don't implement IModel.
         AddCRUD<Product, int>("/products/alternative", p => p.Id, crud =>
         {
             crud.DisableEndpoint(GenericEndpoint.GetList);
-            
+
             crud.GetList<ProductDto>((endpoint) => endpoint
                 .WithDescription("Retrieves a list of products (with optional ?page and ?pageSize params for pagination)")
                 .WithTags("GetList")

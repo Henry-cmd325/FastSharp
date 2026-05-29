@@ -1,9 +1,9 @@
-﻿using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Configuration;
 using FastSharp.Modules.Logging;
+using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Mapster;
 
 namespace FastSharp.Modules.Core.Endpoints;
 
@@ -12,7 +12,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "") :
     where TDbContext : DbContext
 {
     protected EndpointOptions _options = new();
-    
+
     protected readonly string _crudPrefix = crudPrefix;
 
     protected static readonly string EntityName = typeof(TEntity).Name;

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace FastSharp.Modules.Logging;
 
 internal static class LoggingScope

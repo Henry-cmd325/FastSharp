@@ -1,0 +1,42 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+trim_trailing_whitespace = true
+
+[*.cs]
+# --- NAMESPACES (Lo que pediste) ---
+csharp_style_namespace_declarations = file_scoped:error
+
+# --- ESTILO DE CÓDIGO ---
+# Forzar 'var' cuando el tipo es obvio (ej. var x = new Cliente())
+csharp_style_var_when_type_is_apparent = true:suggestion
+# Forzar cuerpos de expresión => para métodos de una sola línea
+csharp_style_expression_bodied_methods = when_possible:suggestion
+# Forzar cuerpos de expresión => para propiedades
+csharp_style_expression_bodied_properties = when_possible:suggestion
+
+# --- ORDEN Y LIMPIEZA ---
+# Quitar usings innecesarios al formatear
+dotnet_diagnostic.IDE0005.severity = warning
+# Los usings de System van primero
+dotnet_sort_system_usings_first = true
+# Evitar 'this.' innecesario
+dotnet_style_qualification_for_field = false:suggestion
+
+# --- REGLAS DE NOMBRAMIENTO (Naming) ---
+# Campos privados deben llevar guion bajo (ej. _usuarioService)
+dotnet_naming_rule.private_fields_with_underscore.symbols = private_fields_symbols
+dotnet_naming_rule.private_fields_with_underscore.style = prefix_underscore_style
+dotnet_naming_rule.private_fields_with_underscore.severity = error
+
+dotnet_naming_symbols.private_fields_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_fields_symbols.applicable_accessibilities = private
+
+dotnet_naming_style.prefix_underscore_style.capitalization = camel_case
+dotnet_naming_style.prefix_underscore_style.required_prefix = _
+
+# Interfaces deben empezar con I
+dotnet_diagnostic.CA1040.severity = warning

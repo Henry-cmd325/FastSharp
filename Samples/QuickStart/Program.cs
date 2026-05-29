@@ -1,7 +1,5 @@
 using Api.Context;
-using Api.Modules.Products.Endpoints;
 using FastSharp.Modules;
-using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

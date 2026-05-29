@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\FastSharp.Modules\FastSharp.Modules.csproj" />
-    <ProjectReference Include="..\..\FastSharp.Generators\FastSharp.Generators.csproj"
+      <ProjectReference Include="..\..\FastSharp.Generators\FastSharp.Generators.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
