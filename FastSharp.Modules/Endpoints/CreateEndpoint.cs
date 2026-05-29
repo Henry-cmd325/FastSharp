@@ -1,4 +1,5 @@
 ﻿using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Core.Endpoints;
 using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -6,12 +7,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FastSharp.Modules.Endpoints;
 
-public class CreateEndpoint<TDbContext, TEntity, TKey>(Func<TEntity, TKey> getId) : IGenericEndpoint
+public class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix, Func<TEntity, TKey> getId) : IGenericEndpoint
     where TEntity : class
     where TDbContext : DbContext
 {
     protected EndpointOptions _options = new();
+    protected readonly string _crudPrefix = crudPrefix.TrimEnd('/');
     protected readonly Func<TEntity, TKey> _getId = getId;
+
+    public bool IsActive => _options.Active;
 
     public void Configure(EndpointOptions options)
     {
@@ -29,7 +33,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(Func<TEntity, TKey> getId
 
                 var entityId = _getId(entity)?.ToString();
 
-                return TypedResults.Created($"/{entityId}", entity);
+                return TypedResults.Created($"{_crudPrefix}/{entityId}", entity);
             });
 
             allOptions.Builder?.Invoke(builder);
@@ -39,7 +43,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(Func<TEntity, TKey> getId
 }
 
 // With DTO.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TEntity, TKey> getId) : CreateEndpoint<TDbContext, TEntity, TKey>(getId)
+public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(string crudPrefix, Func<TEntity, TKey> getId) : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix, getId)
     where TEntity : class
     where TDbContext : DbContext
     where TDto : class
@@ -54,7 +58,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TEntity, TKey>
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
                 var entityId = _getId(entity)?.ToString();
-                return TypedResults.Created($"/{entityId}", dto);
+                return TypedResults.Created($"{_crudPrefix}/{entityId}", dto);
             });
 
             allOptions.Builder?.Invoke(builder);
@@ -64,7 +68,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TEntity, TKey>
 }
 
 // With request and response DTOs.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(Func<TEntity, TKey> getId) : CreateEndpoint<TDbContext, TEntity, TKey>(getId)
+public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(string crudPrefix, Func<TEntity, TKey> getId) : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix, getId)
     where TEntity : class
     where TDbContext : DbContext
     where TRequest : class
@@ -81,7 +85,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(Func
                 await context.SaveChangesAsync();
                 var response = entity.Adapt<TResponse>();
                 var entityId = _getId(entity)?.ToString();
-                return TypedResults.Created($"/{entityId}", response);
+                return TypedResults.Created($"{_crudPrefix}/{entityId}", response);
             });
 
             allOptions.Builder?.Invoke(builder);

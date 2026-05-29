@@ -6,12 +6,23 @@
 
 - [Modular architecture](architecture.md)
 
-Customization of CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route and the second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
+FastSharp can be customized at two levels:
+
+- **Module level** with `ConfigureModule(...)`
+- **CRUD level** with `AddCRUD(...)` and `ICrudEndpoints<TDbContext>`
+
+Remember the current perspective of the library:
+
+- **Modules** define the route group and the contract
+- **Endpoints** implement behavior
+- **`AddCRUD`** is optional
+
+Customization of generated CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route (use a **leading slash**, e.g. `"/products"`). The second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
 
 To configure the module base group (applying options to all endpoints in the group), use `ConfigureModule`. This lets you add metadata or policies at the group level.
 
 ```csharp
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using FastSharp.Modules.Configuration;
 using YourProject.Models;
 using YourProject.Data;
@@ -20,10 +31,8 @@ public class ProductsModule : Module<YourDbContext>
 {
     public ProductsModule()
     {
-        ConfigureModule(module =>
-        {
-            module.WithDescription("Endpoints for managing products in the inventory");
-        });
+        ConfigureModule("/api", module => module
+            .WithDescription("Endpoints for managing products in the inventory"));
 
         AddCRUD<Product, int>("/products", crud =>
         {
@@ -31,16 +40,96 @@ public class ProductsModule : Module<YourDbContext>
             crud.DisableEndpoint(GenericEndpoint.GetList);
 
             // Example 2: Apply metadata to all CRUD endpoints
-            crud.ConfigureAll(endpoints =>
-            {
-                endpoints.WithDescription("Products CRUD endpoint");
-            });
+            crud.ConfigureAll(endpoints => endpoints
+                .WithDescription("Products CRUD endpoint"));
         });
     }
 }
 ```
 
-The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `GetPaged`, `Create`, `Update`, and `Delete` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This gives access to Minimal APIs extension methods like `WithOpenApi`, `RequireAuthorization`, `Accepts`, and `Produces`.
+The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `Create`, `Update`, and `Delete` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This gives access to Minimal APIs extension methods like `WithOpenApi`, `RequireAuthorization`, `Accepts`, and `Produces`.
+
+---
+
+# Usage modes
+
+FastSharp can be used in different ways depending on what the developer needs.
+
+## 1) CRUD-only
+
+```csharp
+public class ProductsModule : Module<YourDbContext>
+{
+    public ProductsModule()
+    {
+        ConfigureModule("/api", module => module.WithTags("Products"));
+        AddCRUD<Product, int>("/products");
+    }
+}
+```
+
+## 2) CRUD + custom endpoints
+
+```csharp
+public class ProductsModule : Module<YourDbContext>
+{
+    public ProductsModule()
+    {
+        ConfigureModule("/api", module => module.WithTags("Products"));
+        AddCRUD<Product, int>("/products");
+        Include<CheckStock>();
+    }
+}
+```
+
+## 3) Custom endpoints only
+
+```csharp
+public class UtilityModule : Module
+{
+    public UtilityModule()
+    {
+        ConfigureModule("/api", module => module.WithTags("Utility"));
+        Include<StatusEndpoint>();
+    }
+}
+```
+
+This mode does not require EF Core or `AddCRUD(...)`.
+
+---
+
+# Validation
+
+Custom endpoints can use FluentValidation through `WithValidation<T>()`. Validators in assemblies passed to `AddFastSharpEndpoints(...)` are registered automatically; you can also register them manually when needed.
+
+```csharp
+using FastSharp.Modules.Core;
+using FluentValidation;
+
+builder.Services.AddScoped<IValidator<CreateProductRequest>, CreateProductRequestValidator>();
+
+public record CreateProductRequest(string Name);
+
+public sealed class CreateProductRequestValidator : AbstractValidator<CreateProductRequest>
+{
+    public CreateProductRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty();
+    }
+}
+
+public sealed class CreateProductEndpoint : IEndpoint
+{
+    public void Map(RouteGroupBuilder app)
+    {
+        app.MapPost("/products", (CreateProductRequest request) => Results.Ok(request))
+            .WithValidation<CreateProductRequest>();
+    }
+}
+```
+
+See [Validation with FluentValidation](validation.md) for the full flow and response behavior.
 
 ---
 
@@ -49,32 +138,26 @@ The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `GetPaged`, `Creat
 ## 1) Single DTO for all CRUD endpoints
 
 ```csharp
-AddCRUD<Product, int>("/products", crud =>
-{
-    crud.ConfigureAll<ProductDto>();
-});
+AddCRUD<Product, int>("/products", crud => crud
+    .ConfigureAll<ProductDto>());
 ```
 
 Resulting contracts:
 - `GET /{id}` -> `ProductDto`
-- `GET /` -> `List<ProductDto>`
-- `GET /paged` -> `PagedResult<ProductDto>`
+- `GET /` -> `List<ProductDto>` (add `?page=1&pageSize=10` for `PagedResult<ProductDto>`)
 - `POST /` -> request `ProductDto`, response `ProductDto`
 - `PUT /{id}` -> request `ProductDto`
 
 ## 2) Separate write/read DTOs
 
 ```csharp
-AddCRUD<Product, int>("/products", options =>
-{
-    options.ConfigureAll<ProductWriteDto, ProductReadDto>();
-});
+AddCRUD<Product, int>("/products", options => options
+    .ConfigureAll<ProductWriteDto, ProductReadDto>());
 ```
 
 Resulting contracts:
 - `GET /{id}` -> `ProductReadDto`
-- `GET /` -> `List<ProductReadDto>`
-- `GET /paged` -> `PagedResult<ProductReadDto>`
+- `GET /` -> `List<ProductReadDto>` (add `?page=1&pageSize=10` for `PagedResult<ProductReadDto>`)
 - `POST /` -> request `ProductWriteDto`, response `ProductReadDto`
 - `PUT /{id}` -> request `ProductWriteDto`
 
@@ -87,15 +170,16 @@ Resulting contracts:
 ## Index
 
 - [Modular architecture](architecture.md)
-- [Basic usage](basic-usage.md)
 
-Besides CRUD endpoints, you can create your own by implementing `IEndpoint`. These must be registered within a module to be mapped. Custom endpoints are nested under the module's route.
+Besides CRUD endpoints, you can create your own by implementing `IEndpoint`. These must be registered within a module to be mapped.
+
+Important: custom endpoints are mapped on the **module route group**, not inside each `AddCRUD(...)` route prefix.
 
 ## 1) Define the endpoint
 
 ```csharp
 // YourProject/Slices/Products/Endpoints/CheckStock.cs
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using Microsoft.AspNetCore.Mvc;
 
 public class CheckStock : IEndpoint
@@ -113,8 +197,7 @@ public class CheckStock : IEndpoint
 
 ## 2) Include in the module
 
-Use `Include<T>()` for a single endpoint or `IncludeNamespace<T>()` for all endpoints in a namespace, we recommend using Include<T>() always since it's more explicit,
-but if you want to move faster you can use it.
+Register each custom endpoint explicitly with `Include<T>()`.
 
 ```csharp
 using YourProject.Data;
@@ -124,10 +207,46 @@ public class ProductsModule : Module<YourDbContext>
 {
     public ProductsModule()
     {
-        IncludeNamespace<CheckStock>();
-        // Include<CheckStock>();
+        ConfigureModule("/api", module => module.WithTags("Products"));
+        Include<CheckStock>();
     }
 }
 ```
 
-This will result in a new endpoint: `GET /api/products/{id}/stock`.
+If the endpoint maps:
+
+- `group.MapGet("/{id}/stock", ...)`
+
+and the module prefix is:
+
+- `ConfigureModule("/api", ...)`
+
+the final route is:
+
+- `GET /api/{id}/stock`
+
+not:
+
+- `GET /api/{id}/stock`
+
+unless the endpoint itself includes `/products` in its route template (for example `"/products/{id}/stock"`).
+
+The default module prefix is `/api` when you do not call `ConfigureModule(...)`.
+
+## 3) Apply module-wide metadata to custom endpoints
+
+Because custom endpoints are mapped on the module route group, they share the group-level metadata configured in `ConfigureModule(...)`.
+
+```csharp
+public class ProductsModule : Module
+{
+    public ProductsModule()
+    {
+        ConfigureModule("/api", module => module
+            .WithTags("Products")
+            .WithDescription("Product module endpoints"));
+
+        Include<CheckStock>();
+    }
+}
+```

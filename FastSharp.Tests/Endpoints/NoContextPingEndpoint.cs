@@ -1,8 +1,8 @@
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
-namespace FastSharp.Tests.Modules;
+namespace FastSharp.Tests.Endpoints;
 
 public sealed class NoContextPingEndpoint : IEndpoint
 {

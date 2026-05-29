@@ -2,7 +2,6 @@
 
 public enum GenericEndpoint
 {
-    GetPaged,
     GetList,
     GetById,
     Create,

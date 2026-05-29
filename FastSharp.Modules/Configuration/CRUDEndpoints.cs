@@ -1,5 +1,6 @@
 ﻿using FastSharp.Models;
-using FastSharp.Modules.Endpoints;
+using FastSharp.Modules.Core.Endpoints;
+using FastSharp.Modules.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -15,26 +16,27 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     internal IGenericEndpoint GetByIdEndpoint; 
     internal IGenericEndpoint GetListEndpoint; 
-    internal IGenericEndpoint GetPagedEndpoint; 
     internal IGenericEndpoint CreateEndpoint; 
     internal IGenericEndpoint UpdateEndpoint; 
     internal IGenericEndpoint DeleteEndpoint;
 
     internal string RoutePrefix { get; set; }
+    internal string CrudPrefix { get; set; }
     internal Func<TKey, Expression<Func<TEntity, bool>>> PredicateFactory;
     internal Expression<Func<TEntity, TKey>> IdSelector;
-    internal Func<TEntity, TKey> GetId;
 
-    public CRUDEndpoints(string routePrefix = "", Expression<Func<TEntity, TKey>>? idSelector = null)
+    public CRUDEndpoints(string routePrefix = "", Expression<Func<TEntity, TKey>>? idSelector = null, string? crudPrefix = null)
     {
         RoutePrefix = routePrefix;
-        // Si no pasan el selector, intentamos ver si implementa IModel
+        CrudPrefix = crudPrefix ?? routePrefix;
+
+        // If no selector is provided, check if the entity implements IModel
         if (idSelector == null && typeof(IModel<TKey>).IsAssignableFrom(typeof(TEntity)))
             IdSelector = e => ((IModel<TKey>)e).Id;
         else
-            IdSelector = idSelector ?? throw new ArgumentException("Debes proveer un ID selector o implementar IModel");
+            IdSelector = idSelector ?? throw new ArgumentException("You must provide an ID selector or implement IModel");
 
-        // Compilamos la lógica de creación del predicado una sola vez al inicio
+        // Compile the predicate creation logic once at startup
         var parameter = IdSelector.Parameters[0];
         var left = IdSelector.Body;
 
@@ -44,27 +46,23 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
             return Expression.Lambda<Func<TEntity, bool>>(comparison, parameter);
         };
 
-        GetId = IdSelector.Compile();
-
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey>();
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey>(IdSelector);
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey>(GetId);
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey>(PredicateFactory, GetId);
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey>(IdSelector);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey>(CrudPrefix);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
         DeleteEndpoint = new DeleteEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
     }
 
-    private EndpointOptions CreateEndpointOptions(Action<RouteHandlerBuilder>? configure = null, bool active = true) =>
+    private static EndpointOptions CreateEndpointOptions(Action<RouteHandlerBuilder>? configure = null, bool active = true) =>
         new() { Builder = configure, Active = active };
 
-    private void ConfigureEndpoint(IGenericEndpoint endpoint, Action<RouteHandlerBuilder>? configure = null, bool active = true) =>
-        endpoint.Configure(CreateEndpointOptions(configure, active));
+    private static void ConfigureEndpoint(IGenericEndpoint endpoint, Action<RouteHandlerBuilder>? configure = null, bool active = true) =>
+        endpoint.Configure(CRUDEndpoints<TDbContext, TEntity, TKey>.CreateEndpointOptions(configure, active));
 
     private IEnumerable<IGenericEndpoint> GetAllEndpoints()
     {
         yield return GetByIdEndpoint;
         yield return GetListEndpoint;
-        yield return GetPagedEndpoint;
         yield return CreateEndpoint;
         yield return UpdateEndpoint;
         yield return DeleteEndpoint;
@@ -72,7 +70,6 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     private IGenericEndpoint? GetEndpoint(GenericEndpoint endpointName) => endpointName switch
     {
-        GenericEndpoint.GetPaged => GetPagedEndpoint,
         GenericEndpoint.GetList => GetListEndpoint,
         GenericEndpoint.GetById => GetByIdEndpoint,
         GenericEndpoint.Create => CreateEndpoint,
@@ -87,7 +84,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         {
             foreach (var endpoint in GetAllEndpoints())
             {
-                ConfigureEndpoint(endpoint, active: false);
+                CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(endpoint, active: false);
             }
 
             return;
@@ -97,116 +94,135 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         if (endpointToDisable is null)
             return;
 
-        ConfigureEndpoint(endpointToDisable, active: false);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(endpointToDisable, active: false);
     }
 
     public void ConfigureGroup(Action<RouteGroupBuilder>? configure) => ConfigGroup = configure;
 
     public void ConfigureAll(Action<RouteHandlerBuilder> configure)
     {
-        ConfigAll = CreateEndpointOptions(configure);
+        ConfigAll = CRUDEndpoints<TDbContext, TEntity, TKey>.CreateEndpointOptions(configure);
     }
 
     public void ConfigureAll<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
-        ConfigAll = CreateEndpointOptions(configure);
+        ConfigAll = CRUDEndpoints<TDbContext, TEntity, TKey>.CreateEndpointOptions(configure);
 
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
-        ConfigureEndpoint(GetByIdEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
 
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>();
-        ConfigureEndpoint(GetListEndpoint, configure);
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
 
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
-        ConfigureEndpoint(GetPagedEndpoint, configure);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(CrudPrefix);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
 
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(GetId);
-        ConfigureEndpoint(CreateEndpoint, configure);
-
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory, GetId);
-        ConfigureEndpoint(UpdateEndpoint, configure);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
     public void ConfigureAll<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class
     {
-        ConfigAll = CreateEndpointOptions(configure);
+        ConfigAll = CRUDEndpoints<TDbContext, TEntity, TKey>.CreateEndpointOptions(configure);
 
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TResponse>(PredicateFactory);
-        ConfigureEndpoint(GetByIdEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
 
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TResponse>();
-        ConfigureEndpoint(GetListEndpoint, configure);
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TResponse>(IdSelector);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
 
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TResponse>(IdSelector);
-        ConfigureEndpoint(GetPagedEndpoint, configure);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(CrudPrefix);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
 
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(GetId);
-        ConfigureEndpoint(CreateEndpoint, configure);
-
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TRequest>(PredicateFactory, GetId);
-        ConfigureEndpoint(UpdateEndpoint, configure);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TRequest>(PredicateFactory);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
     public void Get(Action<RouteHandlerBuilder>? configure = null) =>
-        ConfigureEndpoint(GetByIdEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
 
     public void Get<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
-        ConfigureEndpoint(GetByIdEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
     }
 
     public void GetList(Action<RouteHandlerBuilder>? configure = null) =>
-        ConfigureEndpoint(GetListEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
 
     public void GetList<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
-        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>();
-        ConfigureEndpoint(GetListEndpoint, configure);
-    }
-
-    public void GetPaged(Action<RouteHandlerBuilder>? configure = null) =>
-        ConfigureEndpoint(GetPagedEndpoint, configure);
-
-    public void GetPaged<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
-    {
-        GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
-        ConfigureEndpoint(GetPagedEndpoint, configure);
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
     }
 
     public void Create(Action<RouteHandlerBuilder>? configure = null) =>
-        ConfigureEndpoint(CreateEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
 
     public void Create<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     { 
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(GetId);
-        ConfigureEndpoint(CreateEndpoint, configure);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(CrudPrefix);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
     }
 
     public void Create<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class
     {
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(GetId);
-        ConfigureEndpoint(CreateEndpoint, configure);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(CrudPrefix);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
     }
 
     public void Update(Action<RouteHandlerBuilder>? configure = null) =>
-        ConfigureEndpoint(UpdateEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
 
     public void Update<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory, GetId);
-        ConfigureEndpoint(UpdateEndpoint, configure);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
     public void Delete(Action<RouteHandlerBuilder>? configure = null) =>
-        ConfigureEndpoint(DeleteEndpoint, configure);
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(DeleteEndpoint, configure);
 
-    public void Map(RouteGroupBuilder group)
+    public void Map(RouteGroupBuilder group, ILogger logger, string moduleRoutePrefix)
     {
+        var entityName = typeof(TEntity).Name;
+        var route = CombineRoute(moduleRoutePrefix, RoutePrefix);
+        var enabledVerbs = GetEnabledVerbs();
+
+        FastSharpLogger.LogMappingCrudEndpoints(logger, entityName, route, enabledVerbs);
+
         group = group.MapGroup(RoutePrefix);
         ConfigGroup?.Invoke(group);
 
         foreach (var endpoint in GetAllEndpoints())
             endpoint.Map(group, ConfigAll);
+    }
+
+    private static string CombineRoute(string moduleRoutePrefix, string routePrefix)
+    {
+        var combined = $"{moduleRoutePrefix.TrimEnd('/')}{routePrefix}";
+        return combined.StartsWith('/') ? combined : $"/{combined}";
+    }
+
+    private string GetEnabledVerbs()
+    {
+        var verbs = new List<string>(5);
+
+        if (GetListEndpoint.IsActive)
+            verbs.Add("GET (list)");
+
+        if (GetByIdEndpoint.IsActive)
+            verbs.Add("GET (by id)");
+
+        if (CreateEndpoint.IsActive)
+            verbs.Add("POST");
+
+        if (UpdateEndpoint.IsActive)
+            verbs.Add("PUT");
+
+        if (DeleteEndpoint.IsActive)
+            verbs.Add("DELETE");
+
+        return verbs.Count == 0 ? "none" : string.Join(", ", verbs);
     }
 }

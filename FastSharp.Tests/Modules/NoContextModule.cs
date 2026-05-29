@@ -1,4 +1,5 @@
-using FastSharp.Modules;
+using FastSharp.Modules.Core;
+using FastSharp.Tests.Endpoints;
 
 namespace FastSharp.Tests.Modules;
 

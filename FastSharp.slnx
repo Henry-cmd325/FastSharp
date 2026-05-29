@@ -1,18 +1,31 @@
 <Solution>
+  <Folder Name="/Actions/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/nuget-publish.yml" />
+  </Folder>
   <Folder Name="/Elementos de la solución/">
     <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
     <File Path="Gemini_Generated_Image_52oeva52oeva52oe.png" />
     <File Path="LICENSE" />
+    <File Path="llms.txt" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Elementos de la solución/docs/">
     <File Path="docs/architecture.md" />
     <File Path="docs/customization.md" />
+    <File Path="docs/how-to-fastsharp.md" />
     <File Path="docs/roadmap.md" />
+    <File Path="docs/validation.md" />
   </Folder>
-  <Folder Name="/Samples/">
-    <Project Path="Samples/Api/Api.csproj" />
+  <Folder Name="/Elementos de la solución/docs/ADR/">
+    <File Path="docs/ADR/001-registry-lifecycle.md" />
   </Folder>
+  <Folder Name="/Samples/" />
+  <Folder Name="/Samples/QuickStart/">
+    <Project Path="Samples/QuickStart/Api.csproj" />
+  </Folder>
+  <Project Path="FastSharp.Generators/FastSharp.Generators.csproj" />
   <Project Path="FastSharp.Models/FastSharp.Models.csproj" />
   <Project Path="FastSharp.Modules/FastSharp.Modules.csproj" />
   <Project Path="FastSharp.Tests/FastSharp.Tests.csproj" />

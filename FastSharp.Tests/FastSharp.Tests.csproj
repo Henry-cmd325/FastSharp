@@ -12,7 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mapster" Version="10.0.3" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="Mapster" Version="10.0.7" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="coverlet.collector" Version="6.*">
       <PrivateAssets>all</PrivateAssets>
@@ -31,6 +32,10 @@
   <ItemGroup>
     <ProjectReference Include="..\FastSharp.Models\FastSharp.Models.csproj" />
     <ProjectReference Include="..\FastSharp.Modules\FastSharp.Modules.csproj" />
+    <ProjectReference Include="..\FastSharp.Generators\FastSharp.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

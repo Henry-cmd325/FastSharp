@@ -1,4 +1,8 @@
-﻿using System.Reflection;
+﻿using FastSharp.Modules.Logging;
+using FastSharp.Modules.Registry;
+using FluentValidation;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Reflection;
 
 namespace FastSharp.Modules;
 
@@ -12,18 +16,25 @@ public static class DependencyInjection
             assemblies = [Assembly.GetCallingAssembly()];
         }
 
-        foreach (var assembly in assemblies)
-        {
-            var typesToRegister = assembly.GetTypes()
-                .Where(t => !t.IsAbstract && !t.IsInterface &&
-                            (typeof(IEndpoint).IsAssignableFrom(t) ||
-                             typeof(IFastModule).IsAssignableFrom(t)));
+        var registeredAssemblies = assemblies.Distinct().ToArray();
+        services.AddSingleton(new FastSharpAssemblyRegistration(registeredAssemblies));
 
-            foreach (var type in typesToRegister)
-                services.AddTransient(type);
+        services.AddValidatorsFromAssemblies(registeredAssemblies);
+        foreach (var assembly in registeredAssemblies)
+        {
+            var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(assembly);
+            registry.RegisterServices(services);
+            
         }
 
         return services;
+    }
+
+    public static void MapFastSharpEndpoints(this IEndpointRouteBuilder app)
+    {
+        var registration = app.ServiceProvider.GetService<FastSharpAssemblyRegistration>();
+        var assemblies = registration?.Assemblies.ToArray() ?? [Assembly.GetCallingAssembly()];
+        MapFastSharpEndpoints(app, assemblies);
     }
 
     public static void MapFastSharpEndpoints(this IEndpointRouteBuilder app, params Assembly[] assemblies)
@@ -33,20 +44,21 @@ public static class DependencyInjection
             assemblies = [Assembly.GetCallingAssembly()];
         }
 
-        foreach (var assembly in assemblies)
+        var distinctAssemblies = assemblies.Distinct().ToArray();
+        var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
+            ?? NullLogger.Instance;
+
+        FastSharpLogger.LogStartingModuleScan(logger, distinctAssemblies.Length);
+
+        foreach (var assembly in distinctAssemblies)
         {
-            // Look for the main module types to start the mapping process.
-            var moduleTypes = assembly.GetTypes()
-                .Where(t => !t.IsAbstract &&
-                            !t.IsInterface &&
-                            typeof(IFastModule).IsAssignableFrom(t));
+            var assemblyName = assembly.GetName().Name ?? assembly.FullName ?? "unknown";
+            FastSharpLogger.LogScanningAssembly(logger, assemblyName);
 
-            foreach (var type in moduleTypes)
-            {
-                var module = (IFastModule)app.ServiceProvider.GetRequiredService(type);
-
-                module.Map(app);
-            }
+            var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(assembly);
+            registry.MapEndpoints(app);
         }
+
+        FastSharpLogger.LogCompletedModuleScan(logger);
     }
 }
