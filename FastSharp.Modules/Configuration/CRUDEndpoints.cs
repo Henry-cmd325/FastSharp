@@ -21,20 +21,22 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
     internal IGenericEndpoint DeleteEndpoint;
 
     internal string RoutePrefix { get; set; }
+    internal string CrudPrefix { get; set; }
     internal Func<TKey, Expression<Func<TEntity, bool>>> PredicateFactory;
     internal Expression<Func<TEntity, TKey>> IdSelector;
     internal Func<TEntity, TKey> GetId;
 
-    public CRUDEndpoints(string routePrefix = "", Expression<Func<TEntity, TKey>>? idSelector = null)
+    public CRUDEndpoints(string routePrefix = "", Expression<Func<TEntity, TKey>>? idSelector = null, string? crudPrefix = null)
     {
         RoutePrefix = routePrefix;
-        // Si no pasan el selector, intentamos ver si implementa IModel
+        CrudPrefix = crudPrefix ?? routePrefix;
+        // If no selector is provided, check if the entity implements IModel
         if (idSelector == null && typeof(IModel<TKey>).IsAssignableFrom(typeof(TEntity)))
             IdSelector = e => ((IModel<TKey>)e).Id;
         else
-            IdSelector = idSelector ?? throw new ArgumentException("Debes proveer un ID selector o implementar IModel");
+            IdSelector = idSelector ?? throw new ArgumentException("You must provide an ID selector or implement IModel");
 
-        // Compilamos la lógica de creación del predicado una sola vez al inicio
+        // Compile the predicate creation logic once at startup
         var parameter = IdSelector.Parameters[0];
         var left = IdSelector.Body;
 
@@ -49,7 +51,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
         GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey>();
         GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey>(IdSelector);
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey>(GetId);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey>(CrudPrefix, GetId);
         UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey>(PredicateFactory, GetId);
         DeleteEndpoint = new DeleteEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
     }
@@ -120,7 +122,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
         ConfigureEndpoint(GetPagedEndpoint, configure);
 
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(GetId);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(CrudPrefix, GetId);
         ConfigureEndpoint(CreateEndpoint, configure);
 
         UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory, GetId);
@@ -140,7 +142,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         GetPagedEndpoint = new GetPagedEndpoint<TDbContext, TEntity, TKey, TResponse>(IdSelector);
         ConfigureEndpoint(GetPagedEndpoint, configure);
 
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(GetId);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(CrudPrefix, GetId);
         ConfigureEndpoint(CreateEndpoint, configure);
 
         UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TRequest>(PredicateFactory, GetId);
@@ -179,13 +181,13 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     public void Create<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     { 
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(GetId);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(CrudPrefix, GetId);
         ConfigureEndpoint(CreateEndpoint, configure);
     }
 
     public void Create<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class
     {
-        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(GetId);
+        CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(CrudPrefix, GetId);
         ConfigureEndpoint(CreateEndpoint, configure);
     }
 

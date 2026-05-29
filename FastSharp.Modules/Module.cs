@@ -122,7 +122,8 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
     /// <param name="configure">An action that configures the CRUD endpoints.</param>
     protected void AddCRUD<TEntity, TKey>(string routePrefix, Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class, IModel<TKey>
     {
-        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix);
+        var crudPrefix = urlPrefix.TrimEnd('/') + "/" + routePrefix.TrimStart('/');
+        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix, crudPrefix: crudPrefix);
         configure?.Invoke(options);
         _crudOptionsList.Add(options);
     }
@@ -142,7 +143,8 @@ public abstract class Module<TDbContext> : Module where TDbContext : DbContext
     Expression<Func<TEntity, TKey>> idSelector,
     Action<ICrudEndpoints<TDbContext>>? configure = null) where TEntity : class
     {
-        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix, idSelector);
+        var crudPrefix = urlPrefix.TrimEnd('/') + "/" + routePrefix.TrimStart('/');
+        var options = new CRUDEndpoints<TDbContext, TEntity, TKey>(routePrefix, idSelector, crudPrefix);
         configure?.Invoke(options);
         _crudOptionsList.Add(options);
     }
