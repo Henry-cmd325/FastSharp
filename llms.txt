@@ -128,8 +128,7 @@ If the developer uses:
 
 FastSharp generates these routes:
 
-- `GET /api/products/paged`
-- `GET /api/products`
+- `GET /api/products` (add `?page=1&pageSize=10` for `PagedResult<Product>`)
 - `GET /api/products/{id}`
 - `POST /api/products`
 - `PUT /api/products/{id}`
@@ -171,8 +170,8 @@ Important rules:
 
 - `WithValidation<T>()` is exposed from `FastSharp.Modules.Core`
 - the validated type must match the bound request argument type
-- the validator must be registered in DI as `IValidator<T>`
-- FastSharp does not auto-scan or auto-register validators
+- the validator must be registered in DI as `IValidator<T>` (or discovered through `AddFastSharpEndpoints(...)`, which calls `AddValidatorsFromAssemblies(...)`)
+- you still need to apply `WithValidation<T>()` on the route handler
 - if no validator is registered, the filter does nothing and the request continues normally
 
 ## Typical usage flow

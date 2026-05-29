@@ -8,8 +8,8 @@
 
 # FastSharp 1.0 Minimum Viable Product (MVP)
 - [x] Use DTOs in generic endpoints
-- [x] Automatic model validation
-- [ ] Logging
+- [x] FluentValidation integration for custom endpoints
+- [x] Structured logging for module mapping and CRUD operations
 - [ ] Filtering (optional)
 
 # 🚀 FastSharp Framework Roadmap

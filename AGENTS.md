@@ -50,7 +50,6 @@ This file is written for code agents that need to understand, modify, or extend 
 - `IEndpoint` is the implementation unit for explicit endpoint behavior
 - Implement `IEndpoint.Map(RouteGroupBuilder app)`
 - Register custom endpoints in a module with `Include<T>()`
-- `IncludeNamespace<T>()` exists, but explicit `Include<T>()` is the preferred pattern
 - Custom endpoints map on the module route group, not under each CRUD prefix
 
 ### Assembly scanning and mapping
@@ -70,7 +69,6 @@ Given:
 FastSharp generates:
 
 - `GET /api/products` (returns `List<Product>`; add `?page=1&pageSize=10` for `PagedResult<Product>`)
-- `GET /api/products/{id}`
 - `GET /api/products/{id}`
 - `POST /api/products`
 - `PUT /api/products/{id}`

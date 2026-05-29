@@ -1,11 +1,13 @@
 # Docs index
 
-[Volver al README / Back to README](../README.md)
+[Back to README](../README.md)
 
-## Indice / Index
+## Index
 
-- [Arquitectura modular / Modular architecture](architecture.md)
-- [Personalizacion / Customization](customization.md)
-- [Validacion con FluentValidation / Validation with FluentValidation](validation.md)
-- [Descubrimiento por ensamblados / Assembly scanning](assembly-scanning.md)
+- [Contributing](../CONTRIBUTING.md)
+- [How to FastSharp](how-to-fastsharp.md)
+- [Modular architecture](architecture.md)
+- [Customization](customization.md)
+- [Validation with FluentValidation](validation.md)
+- [Assembly scanning](assembly-scanning.md)
 - [Roadmap](roadmap.md)

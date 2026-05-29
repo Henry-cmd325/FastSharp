@@ -28,6 +28,8 @@ When you apply it to a route handler:
 
 ## 1) Register the validator in DI
 
+`AddFastSharpEndpoints(...)` calls `AddValidatorsFromAssemblies(...)` for the assemblies you pass in, so validators defined in those assemblies are registered automatically. You can also register validators manually when needed:
+
 ```csharp
 using FluentValidation;
 
@@ -92,7 +94,8 @@ with status code `400 Bad Request`.
 - This integration is intended for custom endpoints built with `IEndpoint`.
 - The validated type passed to `WithValidation<T>()` must match the bound request argument type.
 - Validation runs through DI, so the validator must be registered in services.
-- The feature uses FluentValidation, but FastSharp does not auto-scan or auto-register validators for you.
+- `AddFastSharpEndpoints(...)` auto-registers validators from the scanned assemblies through FluentValidation's assembly scanning.
+- You still need to apply `WithValidation<T>()` on the route handler for validation to run.
 - If no validator is registered for the request type, `WithValidation<T>()` simply lets the request continue.
 
 ## Example in this repository

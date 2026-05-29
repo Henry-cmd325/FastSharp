@@ -27,7 +27,7 @@ FastSharp solves this with a simple model:
 - **`AddCRUD`** → optional shortcut for standard REST operations  
 
 ```csharp
-// Inside a module constructor, one call maps 6 REST endpoints backed by EF Core
+// Inside a module constructor, one call maps 5 REST endpoints backed by EF Core
 AddCRUD<Product, int>("/products");
 ```
 
@@ -105,7 +105,7 @@ public class ProductsModule : Module<ApiDbContext>
     public ProductsModule()
     {
         ConfigureModule("/api", opt => opt
-            .WithTags("Productos")
+            .WithTags("Products")
             .WithDescription("Endpoints of products module")
         );
 
@@ -143,7 +143,7 @@ public class CheckProductStock : IEndpoint
         {
             return Results.Ok($"Checking stock for product {id}");
         })
-        .WithTags("prueba");
+        .WithTags("Stock");
     }
 }
 ```
@@ -284,7 +284,7 @@ public sealed class UpdateProductsStock : IEndpoint
 }
 ```
 
-If no `IValidator<T>` is defined for the request type, the validation filter does nothing and the endpoint continues normally. See [Validation with FluentValidation](docs/validation.md).
+If no `IValidator<T>` is registered for the request type, the validation filter does nothing and the endpoint continues normally. Validators in assemblies passed to `AddFastSharpEndpoints(...)` are registered automatically through FluentValidation assembly scanning. See [Validation with FluentValidation](docs/validation.md).
 
 **Add custom endpoints to the same module**
 
@@ -307,7 +307,7 @@ public class CheckProductStock : IEndpoint
         {
             return Results.Ok($"Checking stock for product {id}");
         })
-        .WithTags("prueba");
+        .WithTags("Stock");
     }
 }
 ```
@@ -354,6 +354,7 @@ Each module is a self-contained unit: its routes, its DTOs, its custom endpoints
 
 ## Docs
 
+- [Contributing](CONTRIBUTING.md)
 - [Modular architecture](docs/architecture.md)
 - [Customization](docs/customization.md)
 - [Validation with FluentValidation](docs/validation.md)
@@ -379,4 +380,4 @@ When you use DTOs (`ConfigureAll`, per-endpoint generic types, etc.), FastSharp 
 
 ## License
 
-MIT
+Licensed under the [Apache License, Version 2.0](LICENSE).

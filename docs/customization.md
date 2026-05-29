@@ -101,7 +101,7 @@ This mode does not require EF Core or `AddCRUD(...)`.
 
 # Validation
 
-Custom endpoints can use FluentValidation through `WithValidation<T>()`.
+Custom endpoints can use FluentValidation through `WithValidation<T>()`. Validators in assemblies passed to `AddFastSharpEndpoints(...)` are registered automatically; you can also register them manually when needed.
 
 ```csharp
 using FastSharp.Modules.Core;
@@ -197,7 +197,7 @@ public class CheckStock : IEndpoint
 
 ## 2) Include in the module
 
-Use `Include<T>()` for a single endpoint or `IncludeNamespace<T>()` for all endpoints in a namespace. Prefer `Include<T>()` when possible because it is more explicit.
+Register each custom endpoint explicitly with `Include<T>()`.
 
 ```csharp
 using YourProject.Data;
@@ -227,9 +227,9 @@ the final route is:
 
 not:
 
-- `GET /api/products/{id}/stock`
+- `GET /api/{id}/stock`
 
-unless the endpoint itself includes `/products` in its route template.
+unless the endpoint itself includes `/products` in its route template (for example `"/products/{id}/stock"`).
 
 The default module prefix is `/api` when you do not call `ConfigureModule(...)`.
 
