@@ -1,4 +1,4 @@
-﻿using FastSharp.Modules.Logging;
+using FastSharp.Modules.Logging;
 using FastSharp.Modules.Registry;
 using FluentValidation;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,7 +24,7 @@ public static class DependencyInjection
         {
             var registry = FastSharpAssemblyRegistryStore.GetRequiredRegistry(assembly);
             registry.RegisterServices(services);
-            
+
         }
 
         return services;

@@ -1,5 +1,3 @@
-﻿using Api.Context.Models;
-
 namespace Api.Modules.Products.Dtos
 {
     public class ProductDto

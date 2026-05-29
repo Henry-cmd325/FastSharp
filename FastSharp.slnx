@@ -4,6 +4,7 @@
     <File Path=".github/workflows/nuget-publish.yml" />
   </Folder>
   <Folder Name="/Elementos de la solución/">
+    <File Path=".editorconfig" />
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
     <File Path="Gemini_Generated_Image_52oeva52oeva52oe.png" />

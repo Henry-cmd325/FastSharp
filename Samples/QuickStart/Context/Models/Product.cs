@@ -1,4 +1,4 @@
-﻿using FastSharp.Models;
+using FastSharp.Models;
 
 namespace Api.Context.Models;
 
@@ -13,6 +13,6 @@ public partial class Product : IModel<int>
     public string Description { get; set; } = null!;
 
     public int Quantity { get; set; }
-    
+
     public void AddQuantity(int quantity) => Quantity += quantity;
 }

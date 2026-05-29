@@ -1,23 +1,24 @@
-using FastSharp.Modules;
 using FastSharp.Models;
+using FastSharp.Modules;
+using FastSharp.Modules.Registry;
 using FastSharp.Tests.Context;
 using FastSharp.Tests.Dtos;
 using FastSharp.Tests.Endpoints;
 using FastSharp.Tests.Modules;
+using FastSharp.Tests.Validators;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 using System.Net;
 using System.Net.Http.Json;
+using System.Reflection;
 using System.Text.Json;
 using Xunit;
-using FastSharp.Modules.Registry;
-using FastSharp.Tests.Validators;
 
 namespace FastSharp.Tests;
+
 public class FastSharpEndpointsTests
 {
     private static async Task<WebApplication> CreateAppAsync()

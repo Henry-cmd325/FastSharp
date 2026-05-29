@@ -1,4 +1,4 @@
-﻿using Api.Context;
+using Api.Context;
 using FastSharp.Modules.Core;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +22,7 @@ public class UpdateProductsStock : IEndpoint
 
     public void Map(RouteGroupBuilder app)
     {
-        app.MapPost("/update-stock/{id}", async([FromServices] ApiDbContext dbContext, [FromRoute] int id, [FromBody] UpdateProductStock product) =>
+        app.MapPost("/update-stock/{id}", async ([FromServices] ApiDbContext dbContext, [FromRoute] int id, [FromBody] UpdateProductStock product) =>
         {
             if (id != product.Id) return Results.BadRequest("ID in route does not match ID in body");
 

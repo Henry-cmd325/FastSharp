@@ -1,4 +1,4 @@
-﻿using FastSharp.Models;
+using FastSharp.Models;
 using FastSharp.Modules.Configuration;
 using FastSharp.Modules.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +12,7 @@ public abstract class Module : IFastModule
     protected readonly List<Type> _moduleEndpoints = [];
     protected Action<RouteGroupBuilder>? _groupConfiguration;
     protected string urlPrefix = "/api";
-    
+
     // This is implemented explicitly so the method cannot be called directly by consumers,
     // and can only be invoked by the FastSharp engine when building the Minimal APIs.
     void IFastModule.Map(IEndpointRouteBuilder app)

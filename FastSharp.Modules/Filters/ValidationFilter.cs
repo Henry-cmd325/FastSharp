@@ -1,5 +1,5 @@
-﻿using FluentValidation;
 using FastSharp.Modules.Logging;
+using FluentValidation;
 
 namespace FastSharp.Modules.Filters;
 

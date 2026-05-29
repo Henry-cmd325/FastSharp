@@ -1,4 +1,4 @@
-﻿using FastSharp.Models;
+using FastSharp.Models;
 using FastSharp.Modules.Core.Endpoints;
 using FastSharp.Modules.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +14,10 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     internal EndpointOptions ConfigAll = new();
 
-    internal IGenericEndpoint GetByIdEndpoint; 
-    internal IGenericEndpoint GetListEndpoint; 
-    internal IGenericEndpoint CreateEndpoint; 
-    internal IGenericEndpoint UpdateEndpoint; 
+    internal IGenericEndpoint GetByIdEndpoint;
+    internal IGenericEndpoint GetListEndpoint;
+    internal IGenericEndpoint CreateEndpoint;
+    internal IGenericEndpoint UpdateEndpoint;
     internal IGenericEndpoint DeleteEndpoint;
 
     internal string RoutePrefix { get; set; }
@@ -40,7 +40,8 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         var parameter = IdSelector.Parameters[0];
         var left = IdSelector.Body;
 
-        PredicateFactory = (id) => {
+        PredicateFactory = (id) =>
+        {
             var right = Expression.Constant(id, typeof(TKey));
             var comparison = Expression.Equal(left, right);
             return Expression.Lambda<Func<TEntity, bool>>(comparison, parameter);
@@ -160,7 +161,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
 
     public void Create<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
-    { 
+    {
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(CrudPrefix);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
     }
