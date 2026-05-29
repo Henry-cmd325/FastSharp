@@ -7,11 +7,13 @@ using Mapster;
 
 namespace FastSharp.Modules.Core.Endpoints;
 
-public class CreateEndpoint<TDbContext, TEntity, TKey>() : IGenericEndpoint
+public class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "") : IGenericEndpoint
     where TEntity : class
     where TDbContext : DbContext
 {
     protected EndpointOptions _options = new();
+    
+    protected readonly string _crudPrefix = crudPrefix;
 
     protected static readonly string EntityName = typeof(TEntity).Name;
 
@@ -29,7 +31,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>() : IGenericEndpoint
             ?.FindPrimaryKey()
             ?.Properties
             .Select(x => x.Name)
-            .FirstOrDefault()) ?? throw new Exception("No se encontró PK");
+            .FirstOrDefault()) ?? throw new Exception("PK not found");
 
         // We access the value through the EF entry (Entry)
         // This is very fast and does not use .Compile()
@@ -57,7 +59,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>() : IGenericEndpoint
                         var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
                         FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
 
-                        return TypedResults.Created($"/{entityId}", entity);
+                        return TypedResults.Created($"{_crudPrefix}/{entityId}", entity);
                     }
                     catch (DbUpdateException ex)
                     {
@@ -74,7 +76,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>() : IGenericEndpoint
 }
 
 // With DTO.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>() : CreateEndpoint<TDbContext, TEntity, TKey>
+public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(string crudPrefix = "") : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix)
     where TEntity : class
     where TDbContext : DbContext
     where TDto : class
@@ -101,7 +103,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>() : CreateEndpoint<
                         var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
                         FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
 
-                        return TypedResults.Created($"/{entityId}", dto);
+                        return TypedResults.Created($"{_crudPrefix}/{entityId}", dto);
                     }
                     catch (DbUpdateException ex)
                     {
@@ -118,7 +120,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>() : CreateEndpoint<
 }
 
 // With request and response DTOs.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>() : CreateEndpoint<TDbContext, TEntity, TKey>
+public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(string crudPrefix = "") : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix)
     where TEntity : class
     where TDbContext : DbContext
     where TRequest : class
@@ -147,7 +149,7 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>() : 
                         var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
                         FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
 
-                        return TypedResults.Created($"/{entityId}", response);
+                        return TypedResults.Created($"{_crudPrefix}/{entityId}", response);
                     }
                     catch (DbUpdateException ex)
                     {
