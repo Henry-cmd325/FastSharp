@@ -8,7 +8,7 @@
 	<Title>FastSharp.Modules</Title>
 	<Description>FastSharp: Convention-over-configuration CRUDs and modular endpoints for .NET Minimal APIs. Build faster, keep it clean.</Description>
 	<RepositoryUrl>https://github.com/Henry-cmd325/FastSharp</RepositoryUrl>
-	<Version>1.0.0-alpha.3</Version>
+	<Version>1.0.0-beta.11</Version>
 	<Authors>Henry-cmd365</Authors>
 	<IsPackable>True</IsPackable>
 	<PackageIcon>Gemini_Generated_Image_52oeva52oeva52oe.png</PackageIcon>
@@ -41,7 +41,24 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FastSharp.Models\FastSharp.Models.csproj" />
-    <ProjectReference Include="..\FastSharp.Generators\FastSharp.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="..\FastSharp.Generators\FastSharp.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="IncludeGeneratorInPackage" BeforeTargets="_GetPackageFiles">
+    <MSBuild Projects="..\FastSharp.Generators\FastSharp.Generators.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_GeneratorAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <None Include="@(_GeneratorAssembly)"
+            Pack="true"
+            PackagePath="analyzers/dotnet/cs"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
 
 </Project>

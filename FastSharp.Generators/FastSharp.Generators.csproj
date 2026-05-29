@@ -12,7 +12,7 @@
 	<Title>FastSharp.Generators</Title>
 	<Description>FastSharp: Convention-over-configuration CRUDs and modular endpoints for .NET Minimal APIs. Build faster, keep it clean.</Description>
 	<RepositoryUrl>https://github.com/Henry-cmd325/FastSharp</RepositoryUrl>
-	<Version>1.0.1-alpha.1</Version>
+	<Version>1.0.0-beta.11</Version>
 	<Authors>Henry-cmd365</Authors>
 	<IsPackable>True</IsPackable>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>

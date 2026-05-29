@@ -24,6 +24,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\FastSharp.Modules\FastSharp.Modules.csproj" />
+      <ProjectReference Include="..\..\FastSharp.Generators\FastSharp.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
