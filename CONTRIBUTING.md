@@ -160,7 +160,9 @@ dotnet test FastSharp.Tests/FastSharp.Tests.csproj -c Release
 dotnet build Samples/QuickStart/Api.csproj -c Release
 ```
 
-At the moment, the existing CI workflow (`.github/workflows/nuget-publish.yml`) runs build and test only when a version tag such as `v1.0.0` is pushed. That means local validation is the primary quality gate for day-to-day contributions.
+Pull requests targeting `develop` also run the same checks automatically through [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+Release publishing still runs separately through [`.github/workflows/nuget-publish.yml`](.github/workflows/nuget-publish.yml) when a version tag such as `v1.0.0` is pushed.
 
 ---
 
