@@ -68,3 +68,6 @@ Thumbs.db
 *.tfstate
 *.tfstate.backup
 .terraform/
+
+# Antigravity CLI
+.antigravitycli/

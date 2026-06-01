@@ -1,4 +1,4 @@
-﻿using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Configuration;
 using FastSharp.Modules.Logging;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +15,7 @@ public class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
 
     protected readonly Func<TKey, Expression<Func<TEntity, bool>>> PredicateFactory = predicateFactory;
 
-    private static readonly string EntityName = typeof(TEntity).Name;
+    private static readonly string _entityName = typeof(TEntity).Name;
 
     public bool IsActive => _options.Active;
 
@@ -33,28 +33,28 @@ public class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger) =>
             {
-                using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
+                using (LoggingScope.BeginEntityScope(logger, _entityName, id!))
                 {
-                    FastSharpLogger.LogDeletingEntity(logger, EntityName, LoggingScope.FormatId(id));
+                    FastSharpLogger.LogDeletingEntity(logger, _entityName, LoggingScope.FormatId(id));
 
                     try
                     {
                         var entity = await context.Set<TEntity>().Where(PredicateFactory(id)).FirstOrDefaultAsync();
                         if (entity is null)
                         {
-                            FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+                            FastSharpLogger.LogEntityNotFound(logger, _entityName, LoggingScope.FormatId(id));
                             return TypedResults.NotFound();
                         }
 
                         context.Set<TEntity>().Remove(entity);
                         await context.SaveChangesAsync();
 
-                        FastSharpLogger.LogDeletedEntity(logger, EntityName, LoggingScope.FormatId(id));
+                        FastSharpLogger.LogDeletedEntity(logger, _entityName, LoggingScope.FormatId(id));
                         return TypedResults.NoContent();
                     }
                     catch (DbUpdateException ex)
                     {
-                        FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Delete");
+                        FastSharpLogger.LogPersistenceError(logger, ex, _entityName, "Delete");
                         throw;
                     }
                 }

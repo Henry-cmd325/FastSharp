@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "ikeredu",
+  "classifications": [ "Web", "API", "FastSharp" ],
+  "name": "FastSharp Web API Template",
+  "groupIdentity": "FastSharp.Templates.Api",
+  "identity": "FastSharp.Template.Api.CSharp",
+  "shortName": "fastsharp-api",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "FastSharpApi",
+  "preferNameDirectory": true,
+  "symbols": {
+    "Database": {
+      "type": "parameter",
+      "dataType": "choice",
+      "defaultValue": "InMemory",
+      "description": "The database provider to use for the project.",
+      "choices": [
+        {
+          "choice": "InMemory",
+          "description": "In-Memory database for quick testing"
+        },
+        {
+          "choice": "SqlServer",
+          "description": "Microsoft SQL Server"
+        },
+        {
+          "choice": "Postgres",
+          "description": "PostgreSQL"
+        },
+        {
+          "choice": "MySql",
+          "description": "MySQL (Pomelo)"
+        }
+      ]
+    },
+    "EnableSwagger": {
+      "type": "parameter",
+      "dataType": "bool",
+      "defaultValue": "true",
+      "description": "Determines whether to include and configure Swagger UI."
+    }
+  },
+  "primaryOutputs": [
+    {
+      "path": "FastSharpApi.csproj"
+    }
+  ]
+}
