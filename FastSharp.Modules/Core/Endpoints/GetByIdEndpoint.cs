@@ -15,6 +15,24 @@ internal class GetByIdEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<
 {
     protected readonly Func<TKey, Expression<Func<TEntity, bool>>> _predicateFactory = predicateFactory;
 
+    protected async Task<Results<Ok<TResult>, NotFound>> FetchByIdAsync<TResult>(
+        TKey id, TDbContext context, ILogger logger,
+        Func<IQueryable<TEntity>, IQueryable<TResult>> project,
+        CancellationToken ct)
+    {
+        FastSharpLogger.LogGetById(logger, EntityName, LoggingScope.FormatId(id));
+
+        var entity = await project(context.Set<TEntity>().AsNoTracking().Where(_predicateFactory(id))).FirstOrDefaultAsync(ct);
+        if (entity is null)
+        {
+            FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+            return TypedResults.NotFound();
+        }
+
+        FastSharpLogger.LogGetByIdSuccess(logger, EntityName, LoggingScope.FormatId(id));
+        return TypedResults.Ok(entity);
+    }
+
     public override void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
@@ -26,17 +44,7 @@ internal class GetByIdEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<
                 CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
-                FastSharpLogger.LogGetById(logger, EntityName, LoggingScope.FormatId(id));
-
-                var entity = await context.Set<TEntity>().AsNoTracking().Where(_predicateFactory(id)).FirstOrDefaultAsync(ct);
-                if (entity is null)
-                {
-                    FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
-                    return TypedResults.NotFound();
-                }
-
-                FastSharpLogger.LogGetByIdSuccess(logger, EntityName, LoggingScope.FormatId(id));
-                return TypedResults.Ok(entity);
+                return await FetchByIdAsync(id, context, logger, q => q, ct);
             });
 
             InvokeBuilders(builder, allOptions, _options);
@@ -62,22 +70,7 @@ internal class GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expre
                 CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
-                FastSharpLogger.LogGetById(logger, EntityName, LoggingScope.FormatId(id));
-
-                var entity = await context.Set<TEntity>()
-                    .AsNoTracking()
-                    .Where(_predicateFactory(id))
-                    .ProjectToType<TDto>()
-                    .FirstOrDefaultAsync(ct);
-
-                if (entity is null)
-                {
-                    FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
-                    return TypedResults.NotFound();
-                }
-
-                FastSharpLogger.LogGetByIdSuccess(logger, EntityName, LoggingScope.FormatId(id));
-                return TypedResults.Ok(entity);
+                return await FetchByIdAsync<TDto>(id, context, logger, q => q.ProjectToType<TDto>(), ct);
             });
 
             InvokeBuilders(builder, allOptions, _options);
