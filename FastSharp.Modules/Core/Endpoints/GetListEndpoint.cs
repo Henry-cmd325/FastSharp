@@ -33,7 +33,8 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntit
     protected async Task<IResult> FetchListAsync<TResult>(
         TDbContext context, ILogger logger,
         int? page, int? pageSize,
-        Func<IQueryable<TEntity>, IQueryable<TResult>> project)
+        Func<IQueryable<TEntity>, IQueryable<TResult>> project,
+        CancellationToken ct)
     {
         if (page.HasValue || pageSize.HasValue)
         {
@@ -43,14 +44,14 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntit
             FastSharpLogger.LogGetListPaged(logger, EntityName, p, ps);
 
             var query = context.Set<TEntity>().AsNoTracking();
-            var totalItems = await query.CountAsync();
-            var list = await project(query.OrderBy(_idSelector).Skip((p - 1) * ps).Take(ps)).ToListAsync();
+            var totalItems = await query.CountAsync(ct);
+            var list = await project(query.OrderBy(_idSelector).Skip((p - 1) * ps).Take(ps)).ToListAsync(ct);
 
             return TypedResults.Ok(new PagedResult<TResult>(list, totalItems, p, ps));
         }
 
         FastSharpLogger.LogGetListAll(logger, EntityName);
-        var allItems = await project(context.Set<TEntity>().AsNoTracking()).ToListAsync();
+        var allItems = await project(context.Set<TEntity>().AsNoTracking()).ToListAsync(ct);
         return TypedResults.Ok(allItems);
     }
 
@@ -62,10 +63,11 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntit
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger,
                 [FromQuery] int? page,
-                [FromQuery] int? pageSize) =>
+                [FromQuery] int? pageSize,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
-                return await FetchListAsync(context, logger, page, pageSize, q => q);
+                return await FetchListAsync(context, logger, page, pageSize, q => q, ct);
             });
 
             InvokeBuilders(builder, allOptions, _options);
@@ -88,10 +90,11 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey, TDto>(Expression<Func<
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger,
                 [FromQuery] int? page,
-                [FromQuery] int? pageSize) =>
+                [FromQuery] int? pageSize,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
-                return await FetchListAsync(context, logger, page, pageSize, q => q.ProjectToType<TDto>());
+                return await FetchListAsync<TDto>(context, logger, page, pageSize, q => q.ProjectToType<TDto>(), ct);
             });
 
             InvokeBuilders(builder, allOptions, _options);

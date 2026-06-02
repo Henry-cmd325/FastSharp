@@ -28,13 +28,13 @@ internal class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "")
         return (TKey)context.Entry(entity).Property(keyName).CurrentValue!;
     }
 
-    protected async Task<string> PersistEntityAsync(TDbContext context, TEntity entity, ILogger logger)
+    protected async Task<string> PersistEntityAsync(TDbContext context, TEntity entity, ILogger logger, CancellationToken ct)
     {
         FastSharpLogger.LogCreatingEntity(logger, EntityName);
         try
         {
             context.Set<TEntity>().Add(entity);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(ct);
 
             var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
             FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
@@ -54,10 +54,11 @@ internal class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "")
             var builder = app.MapPost("/", async Task<Created<TEntity>> (
                 [FromBody] TEntity entity,
                 [FromServices] TDbContext context,
-                [FromServices] ILogger<FastSharpEngine> logger) =>
+                [FromServices] ILogger<FastSharpEngine> logger,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
-                var entityId = await PersistEntityAsync(context, entity, logger);
+                var entityId = await PersistEntityAsync(context, entity, logger, ct);
                 return TypedResults.Created($"{_crudPrefix}/{entityId}", entity);
             });
 
@@ -80,11 +81,12 @@ internal class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(string crudPrefix
             var builder = app.MapPost("/", async Task<Created<TDto>> (
                 [FromBody] TDto dto,
                 [FromServices] TDbContext context,
-                [FromServices] ILogger<FastSharpEngine> logger) =>
+                [FromServices] ILogger<FastSharpEngine> logger,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
                 var entity = dto.Adapt<TEntity>();
-                var entityId = await PersistEntityAsync(context, entity, logger);
+                var entityId = await PersistEntityAsync(context, entity, logger, ct);
                 return TypedResults.Created($"{_crudPrefix}/{entityId}", dto);
             });
 
@@ -108,11 +110,12 @@ internal class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(st
             var builder = app.MapPost("/", async Task<Created<TResponse>> (
                 [FromBody] TRequest request,
                 [FromServices] TDbContext context,
-                [FromServices] ILogger<FastSharpEngine> logger) =>
+                [FromServices] ILogger<FastSharpEngine> logger,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
                 var entity = request.Adapt<TEntity>();
-                var entityId = await PersistEntityAsync(context, entity, logger);
+                var entityId = await PersistEntityAsync(context, entity, logger, ct);
                 var response = entity.Adapt<TResponse>();
                 return TypedResults.Created($"{_crudPrefix}/{entityId}", response);
             });

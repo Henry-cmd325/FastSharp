@@ -16,12 +16,12 @@ internal class UpdateEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<F
     protected readonly Func<TKey, Expression<Func<TEntity, bool>>> _predicateFactory = predicateFactory;
 
     protected async Task<Results<NoContent, NotFound, BadRequest<string>>> UpdateEntityAsync(
-        TKey id, TDbContext context, ILogger logger, Action<TEntity> applyChanges)
+        TKey id, TDbContext context, ILogger logger, Action<TEntity> applyChanges, CancellationToken ct)
     {
         FastSharpLogger.LogUpdatingEntity(logger, EntityName, LoggingScope.FormatId(id));
         try
         {
-            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
+            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync(ct);
             if (entity is null)
             {
                 FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
@@ -29,7 +29,7 @@ internal class UpdateEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<F
             }
 
             applyChanges(entity);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(ct);
 
             FastSharpLogger.LogUpdatedEntity(logger, EntityName, LoggingScope.FormatId(id));
             return TypedResults.NoContent();
@@ -51,11 +51,12 @@ internal class UpdateEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<F
                     [FromRoute] TKey id,
                     [FromBody] TEntity updatedEntity,
                     [FromServices] TDbContext context,
-                    [FromServices] ILogger<FastSharpEngine> logger) =>
+                    [FromServices] ILogger<FastSharpEngine> logger,
+                    CancellationToken ct) =>
                 {
                     using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
                     return await UpdateEntityAsync(id, context, logger,
-                            e => context.Entry(e).CurrentValues.SetValues(updatedEntity));
+                        e => context.Entry(e).CurrentValues.SetValues(updatedEntity), ct);
                 });
 
             InvokeBuilders(builder, allOptions, _options);
@@ -79,10 +80,11 @@ internal class UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expres
                     [FromRoute] TKey id,
                     [FromBody] TDto updatedDto,
                     [FromServices] TDbContext context,
-                    [FromServices] ILogger<FastSharpEngine> logger) =>
+                    [FromServices] ILogger<FastSharpEngine> logger,
+                    CancellationToken ct) =>
                 {
                     using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
-                    return await UpdateEntityAsync(id, context, logger, e => updatedDto.Adapt(e));
+                    return await UpdateEntityAsync(id, context, logger, e => updatedDto.Adapt(e), ct);
                 });
 
             InvokeBuilders(builder, allOptions, _options);

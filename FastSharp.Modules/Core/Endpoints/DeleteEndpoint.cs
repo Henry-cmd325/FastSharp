@@ -14,12 +14,12 @@ internal class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<F
 {
     private readonly Func<TKey, Expression<Func<TEntity, bool>>> _predicateFactory = predicateFactory;
 
-    private async Task<Results<NoContent, NotFound>> DeleteEntityAsync(TKey id, TDbContext context, ILogger logger)
+    private async Task<Results<NoContent, NotFound>> DeleteEntityAsync(TKey id, TDbContext context, ILogger logger, CancellationToken ct)
     {
         FastSharpLogger.LogDeletingEntity(logger, EntityName, LoggingScope.FormatId(id));
         try
         {
-            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
+            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync(ct);
             if (entity is null)
             {
                 FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
@@ -27,7 +27,7 @@ internal class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<F
             }
 
             context.Set<TEntity>().Remove(entity);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(ct);
 
             FastSharpLogger.LogDeletedEntity(logger, EntityName, LoggingScope.FormatId(id));
             return TypedResults.NoContent();
@@ -46,10 +46,11 @@ internal class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<F
             var builder = app.MapDelete("/{id}", async Task<Results<NoContent, NotFound>> (
                 [FromRoute] TKey id,
                 [FromServices] TDbContext context,
-                [FromServices] ILogger<FastSharpEngine> logger) =>
+                [FromServices] ILogger<FastSharpEngine> logger,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
-                return await DeleteEntityAsync(id, context, logger);
+                return await DeleteEntityAsync(id, context, logger, ct);
             });
 
             InvokeBuilders(builder, allOptions, _options);

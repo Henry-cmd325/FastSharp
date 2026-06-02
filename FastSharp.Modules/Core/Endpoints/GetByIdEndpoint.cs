@@ -22,12 +22,13 @@ internal class GetByIdEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<
             var builder = app.MapGet("/{id}", async Task<Results<Ok<TEntity>, NotFound>> (
                 [FromRoute] TKey id,
                 [FromServices] TDbContext context,
-                [FromServices] ILogger<FastSharpEngine> logger) =>
+                [FromServices] ILogger<FastSharpEngine> logger,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
                 FastSharpLogger.LogGetById(logger, EntityName, LoggingScope.FormatId(id));
 
-                var entity = await context.Set<TEntity>().AsNoTracking().Where(_predicateFactory(id)).FirstOrDefaultAsync();
+                var entity = await context.Set<TEntity>().AsNoTracking().Where(_predicateFactory(id)).FirstOrDefaultAsync(ct);
                 if (entity is null)
                 {
                     FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
@@ -57,7 +58,8 @@ internal class GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expre
             var builder = app.MapGet("/{id}", async Task<Results<Ok<TDto>, NotFound>> (
                 [FromRoute] TKey id,
                 [FromServices] TDbContext context,
-                [FromServices] ILogger<FastSharpEngine> logger) =>
+                [FromServices] ILogger<FastSharpEngine> logger,
+                CancellationToken ct) =>
             {
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
                 FastSharpLogger.LogGetById(logger, EntityName, LoggingScope.FormatId(id));
@@ -66,7 +68,7 @@ internal class GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expre
                     .AsNoTracking()
                     .Where(_predicateFactory(id))
                     .ProjectToType<TDto>()
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(ct);
 
                 if (entity is null)
                 {
