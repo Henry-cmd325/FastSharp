@@ -7,22 +7,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FastSharp.Modules.Core.Endpoints;
 
-public class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "") : IGenericEndpoint
+internal class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "")
+    : GenericEndpointBase<TDbContext, TEntity>
     where TEntity : class
     where TDbContext : DbContext
 {
-    protected EndpointOptions _options = new();
-
     protected readonly string _crudPrefix = crudPrefix;
-
-    protected static readonly string EntityName = typeof(TEntity).Name;
-
-    public bool IsActive => _options.Active;
-
-    public void Configure(EndpointOptions options)
-    {
-        _options = options;
-    }
 
     protected TKey GetPrimaryKeyValue(TDbContext context, TEntity entity)
     {
@@ -38,7 +28,26 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "") :
         return (TKey)context.Entry(entity).Property(keyName).CurrentValue!;
     }
 
-    public virtual void Map(RouteGroupBuilder app, EndpointOptions allOptions)
+    protected async Task<string> PersistEntityAsync(TDbContext context, TEntity entity, ILogger logger)
+    {
+        FastSharpLogger.LogCreatingEntity(logger, EntityName);
+        try
+        {
+            context.Set<TEntity>().Add(entity);
+            await context.SaveChangesAsync();
+
+            var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
+            FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
+            return entityId;
+        }
+        catch (DbUpdateException ex)
+        {
+            FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Create");
+            throw;
+        }
+    }
+
+    public override void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
         {
@@ -47,36 +56,19 @@ public class CreateEndpoint<TDbContext, TEntity, TKey>(string crudPrefix = "") :
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger) =>
             {
-                using (LoggingScope.BeginEntityScope(logger, EntityName))
-                {
-                    FastSharpLogger.LogCreatingEntity(logger, EntityName);
-
-                    try
-                    {
-                        context.Set<TEntity>().Add(entity);
-                        await context.SaveChangesAsync();
-
-                        var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
-                        FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
-
-                        return TypedResults.Created($"{_crudPrefix}/{entityId}", entity);
-                    }
-                    catch (DbUpdateException ex)
-                    {
-                        FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Create");
-                        throw;
-                    }
-                }
+                using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
+                var entityId = await PersistEntityAsync(context, entity, logger);
+                return TypedResults.Created($"{_crudPrefix}/{entityId}", entity);
             });
 
-            allOptions.Builder?.Invoke(builder);
-            _options.Builder?.Invoke(builder);
+            InvokeBuilders(builder, allOptions, _options);
         }
     }
 }
 
 // With DTO.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(string crudPrefix = "") : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix)
+internal class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(string crudPrefix = "")
+    : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix)
     where TEntity : class
     where TDbContext : DbContext
     where TDto : class
@@ -90,37 +82,20 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(string crudPrefix =
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger) =>
             {
-                using (LoggingScope.BeginEntityScope(logger, EntityName))
-                {
-                    FastSharpLogger.LogCreatingEntity(logger, EntityName);
-
-                    try
-                    {
-                        var entity = dto.Adapt<TEntity>();
-                        context.Set<TEntity>().Add(entity);
-                        await context.SaveChangesAsync();
-
-                        var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
-                        FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
-
-                        return TypedResults.Created($"{_crudPrefix}/{entityId}", dto);
-                    }
-                    catch (DbUpdateException ex)
-                    {
-                        FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Create");
-                        throw;
-                    }
-                }
+                using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
+                var entity = dto.Adapt<TEntity>();
+                var entityId = await PersistEntityAsync(context, entity, logger);
+                return TypedResults.Created($"{_crudPrefix}/{entityId}", dto);
             });
 
-            allOptions.Builder?.Invoke(builder);
-            _options.Builder?.Invoke(builder);
+            InvokeBuilders(builder, allOptions, _options);
         }
     }
 }
 
 // With request and response DTOs.
-public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(string crudPrefix = "") : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix)
+internal class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(string crudPrefix = "")
+    : CreateEndpoint<TDbContext, TEntity, TKey>(crudPrefix)
     where TEntity : class
     where TDbContext : DbContext
     where TRequest : class
@@ -135,32 +110,14 @@ public class CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(stri
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger) =>
             {
-                using (LoggingScope.BeginEntityScope(logger, EntityName))
-                {
-                    FastSharpLogger.LogCreatingEntity(logger, EntityName);
-
-                    try
-                    {
-                        var entity = request.Adapt<TEntity>();
-                        context.Set<TEntity>().Add(entity);
-                        await context.SaveChangesAsync();
-
-                        var response = entity.Adapt<TResponse>();
-                        var entityId = LoggingScope.FormatId(GetPrimaryKeyValue(context, entity));
-                        FastSharpLogger.LogCreatedEntity(logger, EntityName, entityId);
-
-                        return TypedResults.Created($"{_crudPrefix}/{entityId}", response);
-                    }
-                    catch (DbUpdateException ex)
-                    {
-                        FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Create");
-                        throw;
-                    }
-                }
+                using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
+                var entity = request.Adapt<TEntity>();
+                var entityId = await PersistEntityAsync(context, entity, logger);
+                var response = entity.Adapt<TResponse>();
+                return TypedResults.Created($"{_crudPrefix}/{entityId}", response);
             });
 
-            allOptions.Builder?.Invoke(builder);
-            _options.Builder?.Invoke(builder);
+            InvokeBuilders(builder, allOptions, _options);
         }
     }
 }
