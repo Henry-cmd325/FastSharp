@@ -154,6 +154,30 @@ public class FastSharpEndpointsTests
     }
 
     [Fact]
+    public async Task MapFastSharpEndpoints_Put_ReturnsBadRequestWhenBodyIdDiffersFromRoute()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/sample", new TestModel { Id = 1, Name = "Original" });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var updateResponse = await client.PutAsJsonAsync("/api/sample/1", new TestModel { Id = 99, Name = "Hacked" });
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+
+        // The stored entity must be left untouched after a rejected update.
+        var getResponse = await client.GetAsync("/api/sample/1");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        var model = await getResponse.Content.ReadFromJsonAsync<TestModel>();
+        Assert.NotNull(model);
+        Assert.Equal("Original", model!.Name);
+
+        // No row must have leaked under the body id.
+        var leakedResponse = await client.GetAsync("/api/sample/99");
+        Assert.Equal(HttpStatusCode.NotFound, leakedResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task MapFastSharpEndpoints_Delete_ReturnsNotFoundWhenMissing()
     {
         await using var app = await CreateAppAsync();
