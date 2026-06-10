@@ -4,6 +4,7 @@ using FastSharp.Modules.Logging;
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Linq.Expressions;
 
 namespace FastSharp.Modules.Core.Endpoints;
@@ -15,11 +16,23 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntit
 {
     protected readonly Expression<Func<TEntity, TKey>> _idSelector = idSelector;
 
-    protected static (IResult? error, int page, int pageSize) ValidatePagination(int? page, int? pageSize)
+    /// <summary>
+    /// Per-endpoint override for the maximum page size. When <c>null</c>, the global
+    /// <see cref="FastSharpOptions.MaxPageSize"/> is used instead.
+    /// </summary>
+    internal int? MaxPageSizeOverride { get; set; }
+
+    /// <summary>
+    /// Resolves the effective maximum page size, preferring the per-endpoint override over the
+    /// global option. Never below 1 so a misconfigured value cannot disable the endpoint.
+    /// </summary>
+    protected int ResolveMaxPageSize(FastSharpOptions options)
+        => Math.Max(1, MaxPageSizeOverride ?? options.MaxPageSize);
+
+    protected static (IResult? error, int page, int pageSize) ValidatePagination(int? page, int? pageSize, int maxPageSize)
     {
         int p = page ?? 1;
-        int ps = pageSize ?? 10;
-        const int maxPageSize = 100;
+        int ps = pageSize ?? Math.Min(10, maxPageSize);
 
         if (p < 1)
             return (TypedResults.BadRequest("Page must be greater than or equal to 1."), 0, 0);
@@ -32,13 +45,13 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntit
 
     protected async Task<IResult> FetchListAsync<TResult>(
         TDbContext context, ILogger logger,
-        int? page, int? pageSize,
+        int? page, int? pageSize, int maxPageSize,
         Func<IQueryable<TEntity>, IQueryable<TResult>> project,
         CancellationToken ct)
     {
         if (page.HasValue || pageSize.HasValue)
         {
-            var (error, p, ps) = ValidatePagination(page, pageSize);
+            var (error, p, ps) = ValidatePagination(page, pageSize, maxPageSize);
             if (error is not null) return error;
 
             FastSharpLogger.LogGetListPaged(logger, EntityName, p, ps);
@@ -50,8 +63,11 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntit
             return TypedResults.Ok(new PagedResult<TResult>(list, totalItems, p, ps));
         }
 
+        // No pagination parameters: still bounded by the effective max page size to avoid
+        // loading the entire table into memory.
         FastSharpLogger.LogGetListAll(logger, EntityName);
-        var allItems = await project(context.Set<TEntity>().AsNoTracking()).ToListAsync(ct);
+        var allItems = await project(
+            context.Set<TEntity>().AsNoTracking().OrderBy(_idSelector).Take(maxPageSize)).ToListAsync(ct);
         return TypedResults.Ok(allItems);
     }
 
@@ -62,12 +78,14 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey>(Expression<Func<TEntit
             var builder = app.MapGet("/", async Task<IResult> (
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger,
+                [FromServices] IOptions<FastSharpOptions> fastSharpOptions,
                 [FromQuery] int? page,
                 [FromQuery] int? pageSize,
                 CancellationToken ct) =>
             {
+                int maxPageSize = ResolveMaxPageSize(fastSharpOptions.Value);
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
-                return await FetchListAsync(context, logger, page, pageSize, q => q, ct);
+                return await FetchListAsync(context, logger, page, pageSize, maxPageSize, q => q, ct);
             });
 
             InvokeBuilders(builder, allOptions, _options);
@@ -89,12 +107,14 @@ internal class GetListEndpoint<TDbContext, TEntity, TKey, TDto>(Expression<Func<
             var builder = app.MapGet("/", async Task<IResult> (
                 [FromServices] TDbContext context,
                 [FromServices] ILogger<FastSharpEngine> logger,
+                [FromServices] IOptions<FastSharpOptions> fastSharpOptions,
                 [FromQuery] int? page,
                 [FromQuery] int? pageSize,
                 CancellationToken ct) =>
             {
+                int maxPageSize = ResolveMaxPageSize(fastSharpOptions.Value);
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
-                return await FetchListAsync<TDto>(context, logger, page, pageSize, q => q.ProjectToType<TDto>(), ct);
+                return await FetchListAsync<TDto>(context, logger, page, pageSize, maxPageSize, q => q.ProjectToType<TDto>(), ct);
             });
 
             InvokeBuilders(builder, allOptions, _options);
