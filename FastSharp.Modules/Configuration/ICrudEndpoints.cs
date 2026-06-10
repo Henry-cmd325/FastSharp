@@ -65,12 +65,33 @@ public interface ICrudEndpoints<TDbContext> where TDbContext : DbContext
     public void GetList(Action<RouteHandlerBuilder>? configure = null);
 
     /// <summary>
+    /// Configures the GetList endpoint and overrides the maximum page size for this endpoint only.
+    /// </summary>
+    /// <remarks>
+    /// The override takes precedence over the global <see cref="FastSharpOptions.MaxPageSize"/>.
+    /// It caps the number of rows returned when no pagination parameters are supplied and acts as the
+    /// upper bound for the <c>pageSize</c> query parameter.
+    /// </remarks>
+    /// <param name="maxPageSize">The maximum page size for this endpoint. Values below 1 are treated as 1.</param>
+    /// <param name="configure">An optional delegate to further configure the route.</param>
+    public void GetList(int maxPageSize, Action<RouteHandlerBuilder>? configure = null);
+
+    /// <summary>
     /// By default returns <see cref="List{TEntity}"/>. When <c>page</c> and/or <c>pageSize</c>
     /// query parameters are provided, returns <see cref="PagedResult{TEntity}"/> instead.
     /// </summary>
     /// <param name="configure">An optional delegate to further configure the route using the provided RouteHandlerBuilder. If null, the route
     /// is added with default configuration.</param>
     public void GetList<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class;
+
+    /// <summary>
+    /// Configures the GetList endpoint with a DTO contract and overrides the maximum page size for
+    /// this endpoint only. The override takes precedence over the global <see cref="FastSharpOptions.MaxPageSize"/>.
+    /// </summary>
+    /// <typeparam name="TDto">The DTO type returned by the list endpoint.</typeparam>
+    /// <param name="maxPageSize">The maximum page size for this endpoint. Values below 1 are treated as 1.</param>
+    /// <param name="configure">An optional delegate to further configure the route.</param>
+    public void GetList<TDto>(int maxPageSize, Action<RouteHandlerBuilder>? configure = null) where TDto : class;
 
     public void Create(Action<RouteHandlerBuilder>? configure = null);
     public void Create<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class;
