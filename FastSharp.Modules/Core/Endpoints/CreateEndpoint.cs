@@ -87,6 +87,7 @@ internal class CreateEndpoint<TDbContext, TEntity, TKey, TDto>(string crudPrefix
                 using var scope = LoggingScope.BeginEntityScope(logger, EntityName);
                 var entity = dto.Adapt<TEntity>();
                 var entityId = await PersistEntityAsync(context, entity, logger, ct);
+                dto = entity.Adapt<TDto>();
                 return TypedResults.Created($"{_crudPrefix}/{entityId}", dto);
             });
 
