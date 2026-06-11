@@ -1,4 +1,4 @@
-﻿using FastSharp.Modules.Configuration;
+using FastSharp.Modules.Configuration;
 using FastSharp.Modules.Logging;
 using Mapster;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -8,24 +8,45 @@ using System.Linq.Expressions;
 
 namespace FastSharp.Modules.Core.Endpoints;
 
-public class UpdateEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Func<TEntity, bool>>> predicateFactory) : IGenericEndpoint
+internal class UpdateEndpoint<TDbContext, TEntity, TKey>(
+    Func<TKey, Expression<Func<TEntity, bool>>> predicateFactory,
+    Expression<Func<TEntity, TKey>> idSelector)
+    : GenericEndpointBase<TDbContext, TEntity>
     where TEntity : class
     where TDbContext : DbContext
 {
-    protected EndpointOptions _options = new();
-
     protected readonly Func<TKey, Expression<Func<TEntity, bool>>> _predicateFactory = predicateFactory;
 
-    protected static readonly string EntityName = typeof(TEntity).Name;
+    // Compiled once so the body id can be read and compared against the route id.
+    protected readonly Func<TEntity, TKey> _idAccessor = idSelector.Compile();
 
-    public bool IsActive => _options.Active;
-
-    public void Configure(EndpointOptions options)
+    protected async Task<Results<NoContent, NotFound, BadRequest<string>>> UpdateEntityAsync(
+        TKey id, TDbContext context, ILogger logger, Action<TEntity> applyChanges, CancellationToken ct)
     {
-        _options = options;
+        FastSharpLogger.LogUpdatingEntity(logger, EntityName, LoggingScope.FormatId(id));
+        try
+        {
+            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync(ct);
+            if (entity is null)
+            {
+                FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
+                return TypedResults.NotFound();
+            }
+
+            applyChanges(entity);
+            await context.SaveChangesAsync(ct);
+
+            FastSharpLogger.LogUpdatedEntity(logger, EntityName, LoggingScope.FormatId(id));
+            return TypedResults.NoContent();
+        }
+        catch (DbUpdateException ex)
+        {
+            FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Update");
+            throw;
+        }
     }
 
-    public virtual void Map(RouteGroupBuilder app, EndpointOptions allOptions)
+    public override void Map(RouteGroupBuilder app, EndpointOptions allOptions)
     {
         if (_options.Active)
         {
@@ -35,42 +56,33 @@ public class UpdateEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<Fun
                     [FromRoute] TKey id,
                     [FromBody] TEntity updatedEntity,
                     [FromServices] TDbContext context,
-                    [FromServices] ILogger<FastSharpEngine> logger) =>
+                    [FromServices] ILogger<FastSharpEngine> logger,
+                    CancellationToken ct) =>
                 {
-                    using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
+                    using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
+
+                    var bodyId = _idAccessor(updatedEntity);
+                    if (!EqualityComparer<TKey>.Default.Equals(bodyId, id))
                     {
-                        FastSharpLogger.LogUpdatingEntity(logger, EntityName, LoggingScope.FormatId(id));
-
-                        try
-                        {
-                            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
-                            if (entity is null)
-                            {
-                                FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
-                                return TypedResults.NotFound();
-                            }
-
-                            context.Entry(entity).CurrentValues.SetValues(updatedEntity);
-                            await context.SaveChangesAsync();
-
-                            FastSharpLogger.LogUpdatedEntity(logger, EntityName, LoggingScope.FormatId(id));
-                            return TypedResults.NoContent();
-                        }
-                        catch (DbUpdateException ex)
-                        {
-                            FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Update");
-                            throw;
-                        }
+                        return TypedResults.BadRequest(
+                            $"The id in the route ('{id}') does not match the id in the request body ('{bodyId}').");
                     }
+
+                    return await UpdateEntityAsync(id, context, logger,
+                        e => context.Entry(e).CurrentValues.SetValues(updatedEntity), ct);
                 });
 
-            allOptions.Builder?.Invoke(builder);
-            _options.Builder?.Invoke(builder);
+            InvokeBuilders(builder, allOptions, _options);
         }
     }
 }
 
-public class UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expression<Func<TEntity, bool>>> predicateFactory) : UpdateEndpoint<TDbContext, TEntity, TKey>(predicateFactory)
+// The request DTO is decoupled from the entity key, so route/body id consistency
+// is not validated on this overload.
+internal class UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(
+    Func<TKey, Expression<Func<TEntity, bool>>> predicateFactory,
+    Expression<Func<TEntity, TKey>> idSelector)
+    : UpdateEndpoint<TDbContext, TEntity, TKey>(predicateFactory, idSelector)
     where TEntity : class
     where TDbContext : DbContext
     where TDto : class
@@ -85,37 +97,14 @@ public class UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(Func<TKey, Expressi
                     [FromRoute] TKey id,
                     [FromBody] TDto updatedDto,
                     [FromServices] TDbContext context,
-                    [FromServices] ILogger<FastSharpEngine> logger) =>
+                    [FromServices] ILogger<FastSharpEngine> logger,
+                    CancellationToken ct) =>
                 {
-                    using (LoggingScope.BeginEntityScope(logger, EntityName, id!))
-                    {
-                        FastSharpLogger.LogUpdatingEntity(logger, EntityName, LoggingScope.FormatId(id));
-
-                        try
-                        {
-                            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync();
-                            if (entity is null)
-                            {
-                                FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));
-                                return TypedResults.NotFound();
-                            }
-
-                            updatedDto.Adapt(entity);
-                            await context.SaveChangesAsync();
-
-                            FastSharpLogger.LogUpdatedEntity(logger, EntityName, LoggingScope.FormatId(id));
-                            return TypedResults.NoContent();
-                        }
-                        catch (DbUpdateException ex)
-                        {
-                            FastSharpLogger.LogPersistenceError(logger, ex, EntityName, "Update");
-                            throw;
-                        }
-                    }
+                    using var scope = LoggingScope.BeginEntityScope(logger, EntityName, id!);
+                    return await UpdateEntityAsync(id, context, logger, e => updatedDto.Adapt(e), ct);
                 });
 
-            allOptions.Builder?.Invoke(builder);
-            _options.Builder?.Invoke(builder);
+            InvokeBuilders(builder, allOptions, _options);
         }
     }
 }

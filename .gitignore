@@ -2,6 +2,9 @@
 bin/
 obj/
 
+# Gentleman AI
+.atl
+
 # User-specific files
 *.user
 *.suo

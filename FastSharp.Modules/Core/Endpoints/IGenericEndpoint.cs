@@ -1,13 +1,12 @@
 ﻿using FastSharp.Modules.Configuration;
 
-namespace FastSharp.Modules.Core.Endpoints
+namespace FastSharp.Modules.Core.Endpoints;
+
+internal interface IGenericEndpoint
 {
-    internal interface IGenericEndpoint
-    {
-        bool IsActive { get; }
+    bool IsActive { get; }
 
-        void Configure(EndpointOptions options);
+    void Configure(EndpointOptions options);
 
-        void Map(RouteGroupBuilder app, EndpointOptions allOptions);
-    }
+    void Map(RouteGroupBuilder app, EndpointOptions allOptions);
 }
