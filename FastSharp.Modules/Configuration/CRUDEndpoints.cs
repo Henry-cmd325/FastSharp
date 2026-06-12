@@ -14,6 +14,9 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     internal EndpointOptions ConfigAll = new();
 
+    // Per-endpoint GetList max page size override. Null means use the global FastSharpOptions value.
+    internal int? ListMaxPageSize;
+
     internal IGenericEndpoint GetByIdEndpoint;
     internal IGenericEndpoint GetListEndpoint;
     internal IGenericEndpoint CreateEndpoint;
@@ -50,7 +53,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
         GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey>(IdSelector);
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey>(CrudPrefix);
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey>(PredicateFactory, IdSelector);
         DeleteEndpoint = new DeleteEndpoint<TDbContext, TEntity, TKey>(PredicateFactory);
     }
 
@@ -113,12 +116,13 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
 
         GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
+        ApplyListMaxPageSize();
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
 
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(CrudPrefix);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
 
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory, IdSelector);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
@@ -130,12 +134,13 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
 
         GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TResponse>(IdSelector);
+        ApplyListMaxPageSize();
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
 
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(CrudPrefix);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
 
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TRequest>(PredicateFactory);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TRequest>(PredicateFactory, IdSelector);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
@@ -148,12 +153,36 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
     }
 
+    // Applies the stored per-endpoint max page size override to the current GetList endpoint
+    // (the DTO variant derives from the base, so a single cast covers both).
+    private void ApplyListMaxPageSize()
+    {
+        if (GetListEndpoint is GetListEndpoint<TDbContext, TEntity, TKey> listEndpoint)
+            listEndpoint.MaxPageSizeOverride = ListMaxPageSize;
+    }
+
     public void GetList(Action<RouteHandlerBuilder>? configure = null) =>
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
+
+    public void GetList(int maxPageSize, Action<RouteHandlerBuilder>? configure = null)
+    {
+        ListMaxPageSize = maxPageSize;
+        ApplyListMaxPageSize();
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
+    }
 
     public void GetList<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
+        ApplyListMaxPageSize();
+        CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
+    }
+
+    public void GetList<TDto>(int maxPageSize, Action<RouteHandlerBuilder>? configure = null) where TDto : class
+    {
+        ListMaxPageSize = maxPageSize;
+        GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
+        ApplyListMaxPageSize();
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
     }
 
@@ -177,7 +206,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
 
     public void Update<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
-        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
+        UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory, IdSelector);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 

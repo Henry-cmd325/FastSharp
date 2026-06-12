@@ -1,5 +1,6 @@
 using FastSharp.Models;
 using FastSharp.Modules;
+using FastSharp.Modules.Configuration;
 using FastSharp.Modules.Registry;
 using FastSharp.Tests.Context;
 using FastSharp.Tests.Dtos;
@@ -21,7 +22,7 @@ namespace FastSharp.Tests;
 
 public class FastSharpEndpointsTests
 {
-    private static async Task<WebApplication> CreateAppAsync()
+    private static async Task<WebApplication> CreateAppAsync(Action<FastSharpOptions>? configureOptions = null)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -29,7 +30,10 @@ public class FastSharpEndpointsTests
         builder.Services.AddSingleton(databaseRoot);
         builder.Services.AddDbContext<TestDbContext>(options =>
             options.UseInMemoryDatabase("FastSharpTests", databaseRoot));
-        builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
+        if (configureOptions is null)
+            builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
+        else
+            builder.Services.AddFastSharpEndpoints(configureOptions, typeof(SampleModule).Assembly);
         builder.Services.AddScoped<ValidationRequestValidator>();
 
         var app = builder.Build();
@@ -154,6 +158,30 @@ public class FastSharpEndpointsTests
     }
 
     [Fact]
+    public async Task MapFastSharpEndpoints_Put_ReturnsBadRequestWhenBodyIdDiffersFromRoute()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/sample", new TestModel { Id = 1, Name = "Original" });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var updateResponse = await client.PutAsJsonAsync("/api/sample/1", new TestModel { Id = 99, Name = "Hacked" });
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+
+        // The stored entity must be left untouched after a rejected update.
+        var getResponse = await client.GetAsync("/api/sample/1");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        var model = await getResponse.Content.ReadFromJsonAsync<TestModel>();
+        Assert.NotNull(model);
+        Assert.Equal("Original", model!.Name);
+
+        // No row must have leaked under the body id.
+        var leakedResponse = await client.GetAsync("/api/sample/99");
+        Assert.Equal(HttpStatusCode.NotFound, leakedResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task MapFastSharpEndpoints_Delete_ReturnsNotFoundWhenMissing()
     {
         await using var app = await CreateAppAsync();
@@ -247,6 +275,82 @@ public class FastSharpEndpointsTests
         Assert.Equal(3, result.TotalItems);
         Assert.Equal(2, result.Items.Count());
         Assert.Equal(new[] { 1, 2 }, result.Items.Select(item => item.Id).ToArray());
+    }
+
+    [Fact]
+    public async Task GetList_NoParams_CapsAtDefaultMaxPageSize()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            context.Models.AddRange(Enumerable.Range(1, 150)
+                .Select(i => new TestModel { Id = i, Name = $"Item {i}" }));
+            await context.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/api/sample");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var list = await response.Content.ReadFromJsonAsync<List<TestModel>>();
+        Assert.NotNull(list);
+        Assert.Equal(100, list!.Count);
+    }
+
+    [Fact]
+    public async Task GetList_NoParams_RespectsGlobalMaxPageSizeOverride()
+    {
+        await using var app = await CreateAppAsync(options => options.MaxPageSize = 5);
+        var client = app.GetTestClient();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            context.Models.AddRange(Enumerable.Range(1, 20)
+                .Select(i => new TestModel { Id = i, Name = $"Item {i}" }));
+            await context.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/api/sample");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var list = await response.Content.ReadFromJsonAsync<List<TestModel>>();
+        Assert.NotNull(list);
+        Assert.Equal(5, list!.Count);
+    }
+
+    [Fact]
+    public async Task GetList_NoParams_PerEndpointMaxPageSizeOverridesGlobalDefault()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            context.Models.AddRange(Enumerable.Range(1, 20)
+                .Select(i => new TestModel { Id = i, Name = $"Item {i}" }));
+            await context.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/api/max-page");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var list = await response.Content.ReadFromJsonAsync<List<TestModel>>();
+        Assert.NotNull(list);
+        Assert.Equal(3, list!.Count);
+    }
+
+    [Fact]
+    public async Task GetList_PageSizeAbovePerEndpointMax_ReturnsBadRequest()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/api/max-page?page=1&pageSize=10");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

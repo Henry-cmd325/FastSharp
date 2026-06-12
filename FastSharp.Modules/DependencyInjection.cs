@@ -1,3 +1,4 @@
+using FastSharp.Modules.Configuration;
 using FastSharp.Modules.Logging;
 using FastSharp.Modules.Registry;
 using FluentValidation;
@@ -8,8 +9,25 @@ namespace FastSharp.Modules;
 
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Registers FastSharp modules, endpoints, and validators from the given assemblies,
+    /// applying global FastSharp configuration such as the default GetList page size limit.
+    /// </summary>
+    /// <param name="services">The service collection to add registrations to.</param>
+    /// <param name="configure">An action that configures the global <see cref="FastSharpOptions"/>.</param>
+    /// <param name="assemblies">The assemblies to scan. Defaults to the calling assembly when none are provided.</param>
+    public static IServiceCollection AddFastSharpEndpoints(this IServiceCollection services, Action<FastSharpOptions> configure, params Assembly[] assemblies)
+    {
+        services.Configure(configure);
+        return services.AddFastSharpEndpoints(assemblies);
+    }
+
     public static IServiceCollection AddFastSharpEndpoints(this IServiceCollection services, params Assembly[] assemblies)
     {
+        // Ensure IOptions<FastSharpOptions> always resolves (default values) even when the
+        // configuring overload above is not used.
+        services.AddOptions();
+
         if (assemblies.Length == 0)
         {
             // If no assemblies are provided, use the calling assembly.

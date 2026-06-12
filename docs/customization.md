@@ -163,6 +163,38 @@ Resulting contracts:
 
 ---
 
+# Pagination and page size limits
+
+The generated GetList endpoint is always bounded. When a request omits `page` and `pageSize`,
+FastSharp returns a plain list capped at a **maximum page size** (default `100`) instead of loading
+the whole table. The same limit is the upper bound for the `pageSize` query parameter — requests above
+it get a `400 Bad Request`.
+
+You can change the limit at two levels. The most specific wins:
+
+**1) Globally**, for every GetList endpoint in the registered assemblies:
+
+```csharp
+builder.Services.AddFastSharpEndpoints(options =>
+{
+    options.MaxPageSize = 250;
+}, typeof(ProductsModule).Assembly);
+```
+
+**2) Per endpoint**, overriding the global value for a single CRUD registration:
+
+```csharp
+AddCRUD<Product, int>("/products", crud =>
+{
+    crud.GetList(maxPageSize: 25);
+    // DTO variant: crud.GetList<ProductDto>(maxPageSize: 25);
+});
+```
+
+Precedence: **per-endpoint `GetList(maxPageSize: …)` > global `FastSharpOptions.MaxPageSize` > framework default (`100`)**.
+
+---
+
 # Custom endpoints
 
 [Back to README](../README.md)
