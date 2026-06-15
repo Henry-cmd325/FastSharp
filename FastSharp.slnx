@@ -26,6 +26,9 @@
   <Folder Name="/Samples/QuickStart/">
     <Project Path="Samples/QuickStart/Api.csproj" />
   </Folder>
+  <Folder Name="/Templates/">
+    <Project Path="FastSharp.Templates/FastSharp.Templates.csproj" />
+  </Folder>
   <Project Path="FastSharp.Generators/FastSharp.Generators.csproj" />
   <Project Path="FastSharp.Models/FastSharp.Models.csproj" />
   <Project Path="FastSharp.Modules/FastSharp.Modules.csproj" />
