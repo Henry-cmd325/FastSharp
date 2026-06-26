@@ -7,6 +7,11 @@ using System.Linq.Expressions;
 
 namespace FastSharp.Modules.Core;
 
+/// <summary>
+/// Base class for a FastSharp module. Defines a route group and composes custom <see cref="IEndpoint"/> implementations.
+/// Inherit from this class when your module does not need Entity Framework CRUD generation.
+/// For CRUD support, inherit from <see cref="Module{TDbContext}"/> instead.
+/// </summary>
 public abstract class Module : IFastModule
 {
     protected readonly List<Type> _moduleEndpoints = [];
@@ -20,7 +25,7 @@ public abstract class Module : IFastModule
         MapEndpoints(app);
     }
 
-    protected virtual void MapEndpoints(IEndpointRouteBuilder app)
+    internal virtual void MapEndpoints(IEndpointRouteBuilder app)
     {
         var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
             ?? NullLogger.Instance;
@@ -64,12 +69,17 @@ public abstract class Module : IFastModule
     }
 }
 
-//Module with built-in support for CRUD endpoints based on Entity Framework Core DbContext.
+/// <summary>
+/// Base class for a FastSharp module with built-in CRUD endpoint generation backed by Entity Framework Core.
+/// Inherit from this class to use <c>AddCRUD</c> and compose custom <see cref="IEndpoint"/> implementations
+/// within the same route group.
+/// </summary>
+/// <typeparam name="TDbContext">The Entity Framework <see cref="DbContext"/> used to back generated CRUD endpoints.</typeparam>
 public abstract class Module<TDbContext> : Module where TDbContext : DbContext
 {
     private readonly List<ICrudEndpoints<TDbContext>> _crudOptionsList = [];
 
-    protected override void MapEndpoints(IEndpointRouteBuilder app)
+    internal override void MapEndpoints(IEndpointRouteBuilder app)
     {
         var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
             ?? NullLogger.Instance;
