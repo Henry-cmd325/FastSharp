@@ -14,8 +14,11 @@ namespace FastSharp.Modules.Core;
 /// </summary>
 public abstract class Module : IFastModule
 {
+    /// <summary>The endpoint types registered via <see cref="Include{TEndpoint}"/>.</summary>
     protected readonly List<Type> _moduleEndpoints = [];
+    /// <summary>Optional configuration action applied to the module's <see cref="RouteGroupBuilder"/> at map time.</summary>
     protected Action<RouteGroupBuilder>? _groupConfiguration;
+    /// <summary>The URL prefix for this module's route group. Defaults to <c>"/api"</c>.</summary>
     protected string urlPrefix = "/api";
 
     // This is implemented explicitly so the method cannot be called directly by consumers,

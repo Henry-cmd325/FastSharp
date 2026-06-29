@@ -241,6 +241,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
     public void Delete(Action<RouteHandlerBuilder>? configure = null) =>
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(DeleteEndpoint, configure);
 
+    /// <inheritdoc cref="ICrudEndpoints{TDbContext}.Map"/>
     public void Map(RouteGroupBuilder group, ILogger logger, string moduleRoutePrefix)
     {
         var entityName = typeof(TEntity).Name;

@@ -3,10 +3,15 @@ using FluentValidation;
 
 namespace FastSharp.Modules.Filters;
 
+/// <summary>
+/// Endpoint filter that validates the request body against a registered FluentValidation <c>IValidator&lt;T&gt;</c>.
+/// Apply via <see cref="Core.FastSharpExtensions.WithValidation{T}"/> — do not register directly.
+/// </summary>
 public class ValidationFilter<T> : IEndpointFilter where T : class
 {
     private static readonly string EntityName = typeof(T).Name;
 
+    /// <inheritdoc/>
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var validator = context.HttpContext.RequestServices.GetService<IValidator<T>>();
