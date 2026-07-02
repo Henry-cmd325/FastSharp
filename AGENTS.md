@@ -134,6 +134,11 @@ Example from tests:
 - `FastSharp.Tests/Modules/NoContextModule.cs`
 - `FastSharp.Tests/Endpoints/NoContextPingEndpoint.cs`
 
+### If you need to scaffold modules, CRUD, endpoints, or validation
+
+- `skills/fastsharp/SKILL.md`
+  - repo-local Claude Code skill for convention-aware FastSharp scaffolding (`/fastsharp module|crud|endpoint|validation`); installable by consumers via `npx skills add Henry-cmd325/FastSharp`
+
 ### If you need expected behavior before editing core logic
 
 - `FastSharp.Tests/FastSharpEndpointsTests.cs`

@@ -47,6 +47,29 @@ dotnet add package FastSharp.Models
 ⚠️ FastSharp is currently in **beta**. APIs may change between versions.
 ---
 
+## Claude Code Skill
+
+FastSharp includes a Claude Code skill for scaffolding common module work while keeping project conventions visible.
+
+Install it from this repository with the Skills CLI:
+
+```bash
+npx skills add Henry-cmd325/FastSharp
+```
+
+Use it with:
+
+```text
+/fastsharp module
+/fastsharp crud
+/fastsharp endpoint
+/fastsharp validation
+```
+
+The skill helps scaffold modules, optional CRUD registrations, custom endpoints, and validation while checking FastSharp route, `AddCRUD`, assembly scanning, and documentation language conventions.
+
+---
+
 ## Quick Start
 
 The minimum setup is **four code files** (steps 2–5 below) plus package restore. This example uses an in-memory database so you can run it immediately.
