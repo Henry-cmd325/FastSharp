@@ -6,7 +6,6 @@ using FastSharp.Tests.Context;
 using FastSharp.Tests.Dtos;
 using FastSharp.Tests.Endpoints;
 using FastSharp.Tests.Modules;
-using FastSharp.Tests.Validators;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -34,8 +33,6 @@ public class FastSharpEndpointsTests
             builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
         else
             builder.Services.AddFastSharpEndpoints(configureOptions, typeof(SampleModule).Assembly);
-        builder.Services.AddScoped<ValidationRequestValidator>();
-
         var app = builder.Build();
         app.MapFastSharpEndpoints();
         await app.StartAsync();
@@ -420,6 +417,29 @@ public class FastSharpEndpointsTests
 
         Assert.NotNull(model);
         Assert.Equal("DTO Updated", model!.Name);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_ConfigureAllDto_WithValidation_ValidatesWriteEndpoints()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var invalidCreateResponse = await client.PostAsJsonAsync("/api/dto-validation", new TestModelValidatedDto { Id = 70, Name = string.Empty });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidCreateResponse.StatusCode);
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            context.Models.Add(new TestModel { Id = 70, Name = "Valid" });
+            await context.SaveChangesAsync();
+        }
+
+        var invalidUpdateResponse = await client.PutAsJsonAsync("/api/dto-validation/70", new TestModelValidatedDto { Id = 70, Name = string.Empty });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidUpdateResponse.StatusCode);
+
+        var getResponse = await client.GetAsync("/api/dto-validation/70");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
     }
 
     [Fact]

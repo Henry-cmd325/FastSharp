@@ -10,3 +10,11 @@ public sealed class ValidationRequestValidator : AbstractValidator<ValidationReq
         RuleFor(x => x.Name).NotEmpty();
     }
 }
+
+public sealed class TestModelValidatedDtoValidator : AbstractValidator<TestModelValidatedDto>
+{
+    public TestModelValidatedDtoValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty();
+    }
+}
