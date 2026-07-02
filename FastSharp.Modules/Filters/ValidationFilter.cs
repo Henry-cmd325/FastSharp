@@ -22,8 +22,7 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
 
         if (context.Arguments.FirstOrDefault(a => a?.GetType() == typeof(T)) is not T argument)
         {
-            // This should not happen if the filter is applied correctly
-            return Results.Problem("Validation target not found.", statusCode: 500);
+            return await next(context);
         }
 
         var validationResult = await validator.ValidateAsync(argument);
