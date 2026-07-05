@@ -134,6 +134,8 @@ In this example:
 
 Custom endpoints are mapped on the module route group. For example, if `CheckStock` maps `"/{id}/stock"`, the final route becomes `/api/inventory/{id}/stock`.
 
+`ConfigureModule(...)` configures that module group through `IEndpointConventionBuilder`, so it is the place for module-wide metadata and policies. Custom `IEndpoint.Map(RouteGroupBuilder app)` implementations receive the route group when they need to map concrete custom routes.
+
 ---
 
 ## Custom-endpoints-only modules

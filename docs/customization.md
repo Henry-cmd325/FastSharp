@@ -19,7 +19,7 @@ Remember the current perspective of the library:
 
 Customization of generated CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route (use a **leading slash**, e.g. `"/products"`). The second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
 
-To configure the module base group (applying options to all endpoints in the group), use `ConfigureModule`. This lets you add metadata or policies at the group level.
+To configure the module base group (applying options to all endpoints in the group), use `ConfigureModule`. Its configuration callback receives `IEndpointConventionBuilder`, the common Minimal API convention builder surface for metadata, authorization policies, filters, and similar group-level conventions.
 
 ```csharp
 using FastSharp.Modules.Core;
@@ -48,6 +48,8 @@ public class ProductsModule : Module<YourDbContext>
 ```
 
 The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `Create`, `Update`, and `Delete` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This gives access to Minimal APIs extension methods like `WithOpenApi`, `RequireAuthorization`, `Accepts`, and `Produces`.
+
+Do not use `ConfigureModule` to map custom routes. Custom routes belong in `IEndpoint.Map(RouteGroupBuilder app)`, where FastSharp passes the module route group for route mapping.
 
 ---
 
@@ -207,6 +209,8 @@ Besides CRUD endpoints, you can create your own by implementing `IEndpoint`. The
 
 Important: custom endpoints are mapped on the **module route group**, not inside each `AddCRUD(...)` route prefix.
 
+That route group is intentionally exposed only to `IEndpoint.Map(RouteGroupBuilder group)`. Module-level `ConfigureModule(...)` uses `IEndpointConventionBuilder` so module configuration focuses on shared conventions, not route mapping.
+
 ## 1) Define the endpoint
 
 ```csharp
@@ -259,7 +263,7 @@ the final route is:
 
 not:
 
-- `GET /api/{id}/stock`
+- `GET /api/products/{id}/stock`
 
 unless the endpoint itself includes `/products` in its route template (for example `"/products/{id}/stock"`).
 
@@ -267,7 +271,7 @@ The default module prefix is `/api` when you do not call `ConfigureModule(...)`.
 
 ## 3) Apply module-wide metadata to custom endpoints
 
-Because custom endpoints are mapped on the module route group, they share the group-level metadata configured in `ConfigureModule(...)`.
+Because custom endpoints are mapped on the module route group, they share the group-level conventions configured in `ConfigureModule(...)`.
 
 ```csharp
 public class ProductsModule : Module

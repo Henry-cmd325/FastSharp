@@ -48,15 +48,15 @@ public abstract class Module : IFastModule
     }
 
     /// <summary>
-    /// Configures the routing module with a specified URL prefix and a configuration action for the route group.
+    /// Configures the routing module with a specified URL prefix and shared endpoint conventions for the route group.
     /// </summary>
     /// <param name="prefix">The URL prefix to apply to the route group (use a leading slash, e.g. <c>"/api"</c>). This prefix is the base path for all routes defined within the module.</param>
-    /// <param name="configure">An action that configures the route group. Use this action to define routes and additional settings within
-    /// the specified prefix.</param>
-    protected void ConfigureModule(string prefix, Action<RouteGroupBuilder> configure)
+    /// <param name="configure">An action that configures shared endpoint conventions for the route group, such as metadata,
+    /// authorization policies, filters, and OpenAPI settings. Define custom routes in <see cref="IEndpoint.Map(RouteGroupBuilder)"/>.</param>
+    protected void ConfigureModule(string prefix, Action<IEndpointConventionBuilder> configure)
     {
         urlPrefix = prefix;
-        _groupConfiguration = configure;
+        _groupConfiguration = group => configure(group);
     }
 
     /// <summary>

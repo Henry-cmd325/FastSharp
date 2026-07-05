@@ -127,6 +127,8 @@ public class ProductsModule : Module<ApiDbContext>
 {
     public ProductsModule()
     {
+        // ConfigureModule exposes the common Minimal API convention builder surface
+        // for module-level metadata and policies.
         ConfigureModule("/api", opt => opt
             .WithTags("Products")
             .WithDescription("Endpoints of products module")
@@ -154,6 +156,8 @@ public class ProductsModule : Module<ApiDbContext>
 }
 
 ```
+
+`ConfigureModule` configures the module route group through `IEndpointConventionBuilder`, which is the shared Minimal API surface for metadata, authorization policies, filters, and other endpoint conventions. Custom endpoint implementations still receive a `RouteGroupBuilder` in `IEndpoint.Map(...)` because they map the actual routes inside the module group.
 
 **5. Custom Endpoint**
 
@@ -336,6 +340,8 @@ public class CheckProductStock : IEndpoint
 ```
 
 Custom `IEndpoint` types are mapped on the **module route group** (the `ConfigureModule` prefix), not nested under each `AddCRUD` prefix. With `/api` as the module prefix, `MapGet("/{id}/stock", ...)` becomes **`GET /api/{id}/stock`**, alongside **`GET /api/products`**, **`GET /api/products/{id}`**, etc. They still share group-level OpenAPI metadata from `ConfigureModule`.
+
+Use `ConfigureModule` for module-wide conventions such as tags, descriptions, authorization, and filters. Use `IEndpoint.Map(RouteGroupBuilder app)` when you need to define concrete custom routes.
 
 ---
 

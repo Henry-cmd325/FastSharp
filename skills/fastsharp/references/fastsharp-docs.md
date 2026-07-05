@@ -126,12 +126,13 @@ Source: `Samples/QuickStart/Program.cs`
 ## Module + CRUD sample
 
 - Inherit from `Module<TDbContext>` when the module uses generated CRUD.
-- Configure the module group once with `ConfigureModule("/api", ...)`.
+- Configure module-level metadata and policies once with `ConfigureModule("/api", ...)`.
 - Add standard CRUD with `AddCRUD<TEntity, TKey>(...)`.
 - Apply DTOs with `ConfigureAll<TDto>()` for simple read/write DTO parity.
 - Use the id-selector overload for entities that do not implement `IModel<TKey>`.
 - Include custom endpoints explicitly with `Include<TEndpoint>()`.
 - Custom endpoints share the module prefix and group metadata.
+- `ConfigureModule` exposes `IEndpointConventionBuilder` for shared Minimal API conventions; `IEndpoint.Map(RouteGroupBuilder app)` receives the route group for concrete route mapping.
 
 ```csharp
 public class ProductsModule : Module<ApiDbContext>
