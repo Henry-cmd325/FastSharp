@@ -37,6 +37,20 @@ No controllers. No repetition. Just modules organized by domain.
 
 ## Installation
 
+For contributors and local template validation, build and install the template pack from this repository:
+
+```bash
+dotnet pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o ./artifacts
+dotnet new install ./artifacts/FastSharp.Templates.1.0.0-beta.11.nupkg
+dotnet new fastsharp-api -n MyApi --Database InMemory --EnableSwagger true
+cd MyApi
+dotnet run
+```
+
+`FastSharp.Templates` is not yet published as a public NuGet template pack. The local `fastsharp-api` template scaffolds an EF Core-backed example with generated CRUD, custom `IEndpoint` implementations, validation, and a selectable provider (`InMemory`, `SqlServer`, `Postgres`, or `MySql`). FastSharp itself keeps CRUD optional.
+
+Or add FastSharp to an existing Minimal API project:
+
 ```bash
 dotnet add package FastSharp.Modules
 dotnet add package FastSharp.Models
@@ -70,7 +84,7 @@ The skill helps scaffold modules, optional CRUD registrations, custom endpoints,
 
 ---
 
-## Quick Start
+## EF Core CRUD Quick Start
 
 The minimum setup is **four code files** (steps 2–5 below) plus package restore. This example uses an in-memory database so you can run it immediately.
 
@@ -215,20 +229,43 @@ Paths use the module prefix from `ConfigureModule` (these examples use `/api`) p
 
 ## 🧠 Usage Modes
 
-FastSharp can be used in different ways depending on your needs:
+Choose the module base class for the behavior you need:
 
-1. CRUD-only (fastest)
+| Need | Use |
+| --- | --- |
+| Custom routes only; no EF Core dependency | `Module` + `Include<TEndpoint>()` |
+| Generated CRUD, optionally with custom routes | `Module<TDbContext>` + `AddCRUD(...)` |
+
+**Custom endpoints only**
+
 ```csharp
-AddCRUD<Product, int>("/products");
-```
-2. CRUD + custom endpoints
-```csharp
-AddCRUD<Product, int>("/products");
-Include<CheckProductStock>();
+public sealed class HealthModule : Module
+{
+    public HealthModule()
+    {
+        ConfigureModule("/api", module => module.WithTags("Health"));
+        Include<HealthEndpoint>();
+    }
+}
 ```
 
-3. Custom endpoints only (no persistence required)
-You can create modules without relying on EF Core and define only IEndpoint implementations.
+`HealthEndpoint` implements `IEndpoint` and maps its routes on `/api`. This mode does not require a `DbContext` or Entity Framework Core.
+
+**EF Core CRUD, with optional custom endpoints**
+
+```csharp
+public sealed class ProductsModule : Module<ApiDbContext>
+{
+    public ProductsModule()
+    {
+        ConfigureModule("/api", module => module.WithTags("Products"));
+        AddCRUD<Product, int>("/products");
+        Include<CheckProductStock>();
+    }
+}
+```
+
+`AddCRUD` is available only on `Module<TDbContext>` and uses its EF Core `DbContext`. `IEndpoint` implementations remain independent behavior classes in either module type.
 
 ---
 
@@ -374,10 +411,9 @@ Each module is a self-contained unit: its routes, its DTOs, its custom endpoints
 ## Requirements
 
 - .NET 10 or higher
-- Entity Framework Core
-- A registered `DbContext` in the dependency container
-- Entities used with the **parameterless** `AddCRUD<TEntity, TKey>(...)` overload must implement `IModel<TId>` (or use the overload that takes an **id selector** expression for plain POCOs)
-- Modules inheriting from `Module<TDbContext>`
+- For custom endpoints only: `Module`, `IEndpoint`, and ASP.NET Core Minimal APIs
+- For generated CRUD: Entity Framework Core, a registered `DbContext`, and a `Module<TDbContext>`
+- Entities used with the parameterless `AddCRUD<TEntity, TKey>(...)` overload must implement `IModel<TId>`; plain POCOs use the overload with an id selector
 
 ---
 

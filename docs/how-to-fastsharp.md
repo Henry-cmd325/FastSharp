@@ -14,6 +14,35 @@ If you are just getting started, begin simple and only add complexity when your 
 
 ---
 
+## Use the basic template locally
+
+The basic template is available in this repository for contributor and local validation use. Build its template pack, then install it locally:
+
+```bash
+dotnet pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o ./artifacts
+dotnet new install ./artifacts/FastSharp.Templates.1.0.0-beta.11.nupkg
+dotnet new fastsharp-api -n MyApi --Database InMemory --EnableSwagger true
+cd MyApi
+dotnet run
+```
+
+`FastSharp.Templates` is not yet published as a public NuGet template pack. The template demonstrates an EF Core-backed `Module<TDbContext>` with generated CRUD, custom endpoints, validation, and optional Swagger UI. `--Database` accepts `InMemory`, `SqlServer`, `Postgres`, or `MySql`; `--EnableSwagger` defaults to `true`.
+
+The template is a starting point, not a required architecture. FastSharp keeps CRUD optional, and an application can use plain `Module` classes for custom endpoints without EF Core.
+
+---
+
+## Choose the module base class
+
+| Need | Base class | EF Core required? |
+| --- | --- | --- |
+| Custom routes implemented as `IEndpoint` classes | `Module` | No |
+| Generated CRUD, with optional custom endpoints | `Module<TDbContext>` | Yes |
+
+`Module` defines a route group and composes endpoint implementations with `Include<TEndpoint>()`. `Module<TDbContext>` adds `AddCRUD(...)`; custom endpoints still work the same way.
+
+---
+
 ## When should I use each approach?
 
 Choose the structure based on your current stage, not your ideal future architecture.
@@ -30,8 +59,8 @@ Everything lives in a single project:
 
 - Modules
 - Endpoints (`IEndpoint`)
-- DbContext
 - DTOs
+- A `DbContext` only when the module uses generated CRUD
 
 This is the simplest way to get started and matches the Quick Start example.
 
@@ -121,6 +150,6 @@ FastSharp is designed so you can evolve your architecture without changing how m
 
 ---
 
-## Looking for templates?
+## Next step
 
-Templates may be introduced later to make starting easier, but this guide explains the underlying structure and when to use each approach.
+Use the [README](../README.md) for API setup and CRUD configuration, or start with the template and adapt its module structure to your domain.

@@ -7,27 +7,28 @@
 - [Modular architecture](architecture.md)
 
 # FastSharp 1.0 Minimum Viable Product (MVP)
-- [x] Use DTOs in generic endpoints
+- [x] DTOs in generated CRUD endpoints
 - [x] FluentValidation integration for custom endpoints
 - [x] Structured logging for module mapping and CRUD operations
+- [ ] Basic `dotnet new` API template (`fastsharp-api`, issue #29; local pack exists, remaining acceptance criteria pending)
 - [ ] Filtering (optional)
 
 # 🚀 FastSharp Framework Roadmap
 
-FastSharp is a modular meta-framework built on top of .NET 10, designed to provide a good developer experience. It focuses on Vertical Slice Architecture, automated dependency injection, and rapid UI generation.
+FastSharp is a lightweight .NET 10 library for domain modules and endpoint implementations. EF Core CRUD generation is available when a module needs it, but is optional.
 
 ---
 
-## 🏗️ Phase 1: The Modular Core (DI & Scanning)
-*Goal: Establish the transversal foundation to allow "Plug-and-Play" modules with assembly-level isolation.*
+## 🏗️ Phase 1: Modular Core
+*Goal: Keep modules as route-group contracts and endpoints as independent implementations.*
 
-- [ ] **`IFastSharpModule` Contract**: Define the standard interface for module entry points.
-    - Implement `RegisterDependencies(IServiceCollection, IConfiguration)`.
-- [ ] **Transversal Orchestrator**:
-    - Prepare `AddFastSharpModules(params Assembly[] assemblies)` to scan and execute module registrations also from NuGet packages.
+- [x] Module and `IEndpoint` discovery and mapping
+- [x] Custom-endpoint-only `Module` support
+- [x] EF Core-backed `Module<TDbContext>` CRUD support
+- [ ] Per-module dependency registration for reusable module packages
 
-## 🛠️ Phase 2: DX Refinement & Scoping
-*Goal: Polish the Developer Experience and enforce clean architecture patterns.*
+## 🛠️ Phase 2: DX Refinement
+*Goal: Improve diagnostics, conventions, and consumer guidance.*
 
 - [ ] **Internal Scoping Pattern**:
     - Standardize the use of `internal` modifiers for services to prevent cross-module leakage.
@@ -52,10 +53,10 @@ FastSharp is a modular meta-framework built on top of .NET 10, designed to provi
 *Goal: Prepare FastSharp for distribution and community adoption.*
 
 - [ ] **NuGet Modularization**:
-- [ ] **CLI / Scaffolding**:
-    - Create a simple template or CLI tool to scaffold new FastSharp modules quickly.
-- [ ] **Real-World Sample**:
-    - Build a reference implementation (e.g., a Digital Wallet) to demonstrate the power of transversal modules.
+- [ ] **Basic API template**: A local `FastSharp.Templates` pack provides `dotnet new fastsharp-api`; issue #29 remains in progress (public publishing, `Program.cs` size, and `Api.http` are pending).
+- [ ] **Clean Architecture sample**: Add a reference sample that places FastSharp in the API layer (issue #30).
+- [ ] **Clean Architecture template**: Add `dotnet new fastsharp-clean` after the sample is complete (issue #31; blocked by #30).
+- [ ] **Real-world sample**: Build a reference implementation beyond the basic template.
 
 ---
 
