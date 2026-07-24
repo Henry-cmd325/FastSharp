@@ -76,7 +76,7 @@ Content-Type: application/json
 
 ###
 
-### Custom endpoint - check product stock
+### Inline module route - check product stock
 GET {{Api_HostAddress}}/api/{{productId}}/stock
 Accept: application/json
 

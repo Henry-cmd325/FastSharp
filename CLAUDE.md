@@ -37,14 +37,14 @@ FastSharp is a NuGet library for building ASP.NET Core Minimal APIs organized by
 ### Core model
 
 A **module** (`Module` or `Module<TDbContext>`) defines a route group and composes endpoints:
-- `ConfigureModule("/api/products", ...)` sets the route prefix and group-level OpenAPI metadata
-- `AddCRUD<TEntity, TKey>("/items")` generates GET/GET-by-id/POST/PUT/DELETE under the module prefix
-- `Include<TEndpoint>()` registers an `IEndpoint` implementation on the module's route group
+- `Configure(ModuleConfiguration)` sets the route prefix and group-level OpenAPI metadata
+- `AddRoutes(RouteGroupBuilder)` contains `AddCRUD<TEntity, TKey>("/items")`, `Include<TEndpoint>()`, and small inline routes
+- `ConfigureModule(...)` remains available only for constructor-style compatibility
 - Custom `IEndpoint` types implement `Map(RouteGroupBuilder app)` and are the behavioral unit
 
 **Assembly scanning** (`DependencyInjection.cs`):
 - `AddFastSharpEndpoints(assembly)` registers modules, endpoints, and validators from one or more assemblies; defaults to calling assembly
-- `MapFastSharpEndpoints()` resolves registered modules and maps their route groups
+- `MapFastSharpEndpoints()` resolves registered modules and maps their route groups once per application/assembly
 - Both methods require the assembly to have a source-generated `IFastSharpAssemblyRegistry` (produced by `FastSharp.Generators`); passing an assembly without one throws `InvalidOperationException`
 
 **CRUD generation** (`FastSharp.Modules/Core/Endpoints/`, `Configuration/`):

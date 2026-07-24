@@ -27,7 +27,7 @@ FastSharp solves this with a simple model:
 - **`AddCRUD`** → optional shortcut for standard REST operations  
 
 ```csharp
-// Inside a module constructor, one call maps 5 REST endpoints backed by EF Core
+// Inside AddRoutes, one call maps 5 REST endpoints backed by EF Core
 AddCRUD<Product, int>("/products");
 ```
 
@@ -139,14 +139,17 @@ namespace yourproject.Modules.Products;
 
 public class ProductsModule : Module<ApiDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        // ConfigureModule exposes the common Minimal API convention builder surface
-        // for module-level metadata and policies.
-        ConfigureModule("/api", opt => opt
+        configuration.Prefix = "/api";
+        configuration.Conventions = routes => routes
             .WithTags("Products")
-            .WithDescription("Endpoints of products module")
-        );
+            .WithDescription("Endpoints of products module");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
+        AddCRUD<Product, int>("/products", crud => crud.ConfigureAll<ProductDto>());
 
         // Use a manual Id selector for entities that do not implement IModel<int>.
         AddCRUD<Product, int>("/products/alternative", p => p.Id, crud =>
@@ -164,14 +167,34 @@ public class ProductsModule : Module<ApiDbContext>
             );
         });
 
-        // Declare custom endpoints for this module (implemented via IEndpoint)
-        //Include<CheckProductStock>();
+        // Keep complex behavior in an endpoint class.
+        Include<CheckProductStock>();
+
+        // Small module-local routes can use Minimal API mapping directly.
+        routes.MapGet("/products/status", () => Results.Ok("available"));
     }
 }
 
 ```
 
-`ConfigureModule` configures the module route group through `IEndpointConventionBuilder`, which is the shared Minimal API surface for metadata, authorization policies, filters, and other endpoint conventions. Custom endpoint implementations still receive a `RouteGroupBuilder` in `IEndpoint.Map(...)` because they map the actual routes inside the module group.
+`Configure(ModuleConfiguration)` configures the module route prefix and shared conventions through `IEndpointConventionBuilder`. `AddRoutes(RouteGroupBuilder)` composes all module routes: generated CRUD, included `IEndpoint` implementations, and small inline Minimal API routes.
+
+### Module lifecycle and compatibility
+
+For new modules, override `Configure(ModuleConfiguration)` for the prefix and module-wide conventions, then override `AddRoutes(RouteGroupBuilder)` for every route-producing operation. FastSharp invokes the hooks at mapping time, never from a base constructor. It applies the shared conventions to the group, maps any constructor-style registrations, then invokes `AddRoutes`.
+
+Existing constructor-style modules remain valid and keep their routes unchanged:
+
+```csharp
+public ProductsModule()
+{
+    ConfigureModule("/api", routes => routes.WithTags("Products"));
+    AddCRUD<Product, int>("/products");
+    Include<CheckProductStock>();
+}
+```
+
+Calling `MapFastSharpEndpoints` repeatedly for the same application and assembly is idempotent; FastSharp maps each registered assembly once.
 
 **5. Custom Endpoint**
 
@@ -223,7 +246,7 @@ Run the project and open `/openapi/v1.json` — you'll see the generated CRUD en
 | `PUT` | `/api/products/alternative/{id}` | Update |
 | `DELETE` | `/api/products/alternative/{id}` | Delete |
 
-Paths use the module prefix from `ConfigureModule` (these examples use `/api`) plus the `AddCRUD` route prefix (here, `/products/alternative`). **Convention:** pass a leading slash on every path you own (`ConfigureModule`, `AddCRUD`, and custom `MapGet` / `MapPost` templates) so routes stay consistent across modules and the library.
+Paths use the module prefix from `ModuleConfiguration.Prefix` (these examples use `/api`) plus the `AddCRUD` route prefix (here, `/products/alternative`). **Convention:** pass a leading slash on every path you own (`ModuleConfiguration.Prefix`, `AddCRUD`, and custom `MapGet` / `MapPost` templates) so routes stay consistent across modules and the library.
 
 ---
 
@@ -241,9 +264,14 @@ Choose the module base class for the behavior you need:
 ```csharp
 public sealed class HealthModule : Module
 {
-    public HealthModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module.WithTags("Health"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module.WithTags("Health");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         Include<HealthEndpoint>();
     }
 }
@@ -256,9 +284,14 @@ public sealed class HealthModule : Module
 ```csharp
 public sealed class ProductsModule : Module<ApiDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module.WithTags("Products"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module.WithTags("Products");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         AddCRUD<Product, int>("/products");
         Include<CheckProductStock>();
     }
@@ -353,9 +386,14 @@ If no `IValidator<T>` is registered for the request type, the validation filter 
 **Add custom endpoints to the same module**
 
 ```csharp
-public ProductsModule()
+protected override void Configure(ModuleConfiguration configuration)
 {
-    ConfigureModule("/api", module => module.WithTags("Products"));
+    configuration.Prefix = "/api";
+    configuration.Conventions = module => module.WithTags("Products");
+}
+
+protected override void AddRoutes(RouteGroupBuilder routes)
+{
     AddCRUD<Product, int>("/products");
 
     Include<CheckProductStock>();
@@ -376,9 +414,9 @@ public class CheckProductStock : IEndpoint
 }
 ```
 
-Custom `IEndpoint` types are mapped on the **module route group** (the `ConfigureModule` prefix), not nested under each `AddCRUD` prefix. With `/api` as the module prefix, `MapGet("/{id}/stock", ...)` becomes **`GET /api/{id}/stock`**, alongside **`GET /api/products`**, **`GET /api/products/{id}`**, etc. They still share group-level OpenAPI metadata from `ConfigureModule`.
+Custom `IEndpoint` types are mapped on the **module route group** (the `ModuleConfiguration.Prefix`), not nested under each `AddCRUD` prefix. With `/api` as the module prefix, `MapGet("/{id}/stock", ...)` becomes **`GET /api/{id}/stock`**, alongside **`GET /api/products`**, **`GET /api/products/{id}`**, etc. They still share group-level OpenAPI metadata from `Configure`.
 
-Use `ConfigureModule` for module-wide conventions such as tags, descriptions, authorization, and filters. Use `IEndpoint.Map(RouteGroupBuilder app)` when you need to define concrete custom routes.
+Use `Configure` for module-wide conventions such as tags, descriptions, authorization, and filters. Use `AddRoutes` for small module-local routes and `IEndpoint.Map(RouteGroupBuilder app)` for substantial custom behavior.
 
 ---
 
@@ -397,7 +435,7 @@ YourProject/
 └── Modules/
     ├── Products/
     │   ├── ProductsModule.cs
-    │   ├── CheckProductStock.cs
+    │   ├── UpdateProductsStock.cs
     │   └── ProductDto.cs
     └── Orders/
         ├── OrdersModule.cs

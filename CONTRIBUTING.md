@@ -137,7 +137,7 @@ Follow the conventions already used in this repository:
 - Write code comments and XML documentation in English
 - Frame FastSharp as **modules first, endpoints second, CRUD optional**
 - Use leading slashes on route prefixes (`"/api"`, `"/products"`)
-- Register custom endpoints with `Include<T>()` only
+- Use `AddRoutes(RouteGroupBuilder)` for small inline routes; keep substantial behavior in `IEndpoint` classes registered with `Include<T>()`
 - Prefer minimal, focused diffs over broad refactors
 - Keep the project licensed under Apache 2.0 (`LICENSE`)
 

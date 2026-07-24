@@ -12,7 +12,7 @@ Use this skill when the user asks to scaffold or adjust FastSharp modules, CRUD 
 
 ## Hard Rules
 
-- Use leading slashes for owned route prefixes in `ConfigureModule`, `AddCRUD`, and Minimal API route templates.
+- Use leading slashes for owned route prefixes in `ModuleConfiguration.Prefix`, `AddCRUD`, and Minimal API route templates.
 - Do not use an `AddCRUD<TEntity, TKey>` overload without an id selector unless `TEntity` implements `IModel<TKey>`; otherwise use the id-selector overload.
 - When `AddFastSharpEndpoints` scans explicit assemblies, require that the assembly references `FastSharp.Generators` so a source-generated `IFastSharpAssemblyRegistry` is produced for it.
 - Preserve native Minimal API chaining for metadata, authorization, and filters.
@@ -22,7 +22,7 @@ Use this skill when the user asks to scaffold or adjust FastSharp modules, CRUD 
 
 | Request                 | Scaffold                                                                         |
 | ----------------------- | -------------------------------------------------------------------------------- |
-| `/fastsharp module`     | A domain module with `ConfigureModule` and optional `Include<TEndpoint>()` calls |
+| `/fastsharp module`     | A domain module with `Configure`, `AddRoutes`, and optional `Include<TEndpoint>()` calls |
 | `/fastsharp crud`       | An `AddCRUD` registration with DTO/configuration hooks when needed               |
 | `/fastsharp endpoint`   | An `IEndpoint` implementation mapped on the module route group                   |
 | `/fastsharp validation` | FluentValidation validator plus request DTO and endpoint filter wiring           |
@@ -32,7 +32,7 @@ Use this skill when the user asks to scaffold or adjust FastSharp modules, CRUD 
 
 1. Read the relevant local references before editing.
 2. Identify the domain, route prefix, DbContext, entity key type, DTOs, and validation needs.
-3. Prefer explicit endpoint classes for behavior; add CRUD only for standard REST operations.
+3. Prefer `Configure(ModuleConfiguration)` for prefix/conventions and `AddRoutes(RouteGroupBuilder)` for route composition. Keep complex behavior in explicit endpoint classes; add CRUD only for standard REST operations.
 4. Scaffold the smallest useful files and update module registration.
 5. Verify route prefixes, id selection, assembly registration, and English comments/docs.
 

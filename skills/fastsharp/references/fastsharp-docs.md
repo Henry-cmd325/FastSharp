@@ -43,7 +43,8 @@ Source: `docs/how-to-fastsharp.md`
 - A module composes routes and metadata; it should not become a controller, service, or request handler.
 - `IEndpoint` classes implement explicit behavior through `Map(RouteGroupBuilder app)`.
 - Custom endpoints are mapped on the module route group, not inside each CRUD prefix.
-- `Include<TEndpoint>()` registers a custom endpoint implementation inside a module.
+- `Configure(ModuleConfiguration)` sets the module prefix and shared conventions; `AddRoutes(RouteGroupBuilder)` composes its routes.
+- `Include<TEndpoint>()` maps a custom endpoint implementation inside `AddRoutes`.
 - A single module can contain multiple CRUD registrations and multiple custom endpoints.
 
 Source: `docs/architecture.md`, `FastSharp.Modules/Core/Module.cs`
@@ -126,23 +127,27 @@ Source: `Samples/QuickStart/Program.cs`
 ## Module + CRUD sample
 
 - Inherit from `Module<TDbContext>` when the module uses generated CRUD.
-- Configure module-level metadata and policies once with `ConfigureModule("/api", ...)`.
-- Add standard CRUD with `AddCRUD<TEntity, TKey>(...)`.
+- Configure module-level metadata and policies once with `Configure(ModuleConfiguration)`.
+- Add standard CRUD, explicit endpoints, and small inline routes in `AddRoutes(RouteGroupBuilder)`.
 - Apply DTOs with `ConfigureAll<TDto>()` for simple read/write DTO parity.
 - Use the id-selector overload for entities that do not implement `IModel<TKey>`.
 - Include custom endpoints explicitly with `Include<TEndpoint>()`.
 - Custom endpoints share the module prefix and group metadata.
-- `ConfigureModule` exposes `IEndpointConventionBuilder` for shared Minimal API conventions; `IEndpoint.Map(RouteGroupBuilder app)` receives the route group for concrete route mapping.
+- `ModuleConfiguration.Conventions` exposes `IEndpointConventionBuilder` for shared Minimal API conventions; `AddRoutes` and `IEndpoint.Map(RouteGroupBuilder app)` receive the route group for concrete route mapping.
 
 ```csharp
 public class ProductsModule : Module<ApiDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", opt => opt
+        configuration.Prefix = "/api";
+        configuration.Conventions = opt => opt
             .WithTags("Products")
-            .WithDescription("Endpoints of products module"));
+            .WithDescription("Endpoints of products module");
+    }
 
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         AddCRUD<Product, int>("/products", crud => crud.ConfigureAll<ProductDto>());
 
         AddCRUD<Product, int>("/products/alternative", p => p.Id, crud =>
@@ -152,8 +157,8 @@ public class ProductsModule : Module<ApiDbContext>
             crud.Create<ProductRequest, ProductDto>(endpoint => endpoint.WithTags("Create"));
         });
 
-        Include<CheckProductStock>();
         Include<UpdateProductsStock>();
+        routes.MapGet("/{id}/stock", ([FromRoute] int id) => Results.Ok($"Checking stock for product {id}"));
     }
 }
 ```
@@ -212,15 +217,21 @@ Source: `Samples/QuickStart/Modules/Products/Endpoints/UpdateProductsStock.cs`
 ## Minimal Examples
 
 ```csharp
-// Module with explicit route group and a custom endpoint
-ConfigureModule("/api", options => options.WithTags("Products"));
-Include<CheckProductStock>();
+public sealed class InventoryModule : Module<InventoryDbContext>
+{
+    protected override void Configure(ModuleConfiguration configuration)
+    {
+        configuration.Prefix = "/api/inventory";
+        configuration.Conventions = routes => routes.WithTags("Inventory");
+    }
 
-// AddCRUD with an id selector (entity does not implement IModel<TKey>)
-AddCRUD<Product, int>("/products", product => product.Id);
-
-// AddCRUD without a selector requires the entity to implement IModel<TKey>
-// AddCRUD<ProductModel, Guid>("/products");
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
+        AddCRUD<Product, int>("/products", product => product.Id);
+        Include<CheckProductStock>();
+        routes.MapGet("/status", () => Results.Ok());
+    }
+}
 ```
 
 ```csharp

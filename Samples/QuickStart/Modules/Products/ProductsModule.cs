@@ -9,12 +9,16 @@ namespace Api.Modules.Products;
 
 public class ProductsModule : Module<ApiDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", opt => opt
+        configuration.Prefix = "/api";
+        configuration.Conventions = opt => opt
             .WithTags("Productos")
-            .WithDescription("Endpoints of products module")
-        );
+            .WithDescription("Endpoints of products module");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
 
         // Simplest way: Automatically maps all standard CRUD operations to ProductDto.
         // If your model implements IModel, FastSharp handles the Id selection automatically.
@@ -37,8 +41,12 @@ public class ProductsModule : Module<ApiDbContext>
             );
         });
 
-        // You can also include custom endpoints in the module.
-        Include<CheckProductStock>();
+        // Keep complex behavior in endpoint classes.
         Include<UpdateProductsStock>();
+
+        // Small, module-local routes can use native Minimal API mapping directly.
+        routes.MapGet("/{id}/stock", ([Microsoft.AspNetCore.Mvc.FromRoute] int id) =>
+            Results.Ok($"Checking stock for product {id}"))
+            .WithTags("Custom");
     }
 }

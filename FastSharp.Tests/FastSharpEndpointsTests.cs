@@ -7,6 +7,8 @@ using FastSharp.Tests.Dtos;
 using FastSharp.Tests.Endpoints;
 using FastSharp.Tests.Modules;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -14,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text.Json;
 using Xunit;
 
@@ -21,7 +24,7 @@ namespace FastSharp.Tests;
 
 public class FastSharpEndpointsTests
 {
-    private static async Task<WebApplication> CreateAppAsync(Action<FastSharpOptions>? configureOptions = null)
+    private static async Task<WebApplication> CreateAppAsync(Action<FastSharpOptions>? configureOptions = null, int mappingCount = 1)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -33,6 +36,33 @@ public class FastSharpEndpointsTests
             builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
         else
             builder.Services.AddFastSharpEndpoints(configureOptions, typeof(SampleModule).Assembly);
+        var app = builder.Build();
+        for (var mappingAttempt = 0; mappingAttempt < mappingCount; mappingAttempt++)
+        {
+            app.MapFastSharpEndpoints();
+        }
+        await app.StartAsync();
+        return app;
+    }
+
+    private static async Task<WebApplication> CreateAppWithDefaultAssemblyAsync(Action<FastSharpOptions>? configureOptions = null)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        var databaseRoot = new InMemoryDatabaseRoot();
+        builder.Services.AddSingleton(databaseRoot);
+        builder.Services.AddDbContext<TestDbContext>(options =>
+            options.UseInMemoryDatabase("FastSharpDefaultAssemblyTests", databaseRoot));
+
+        if (configureOptions is null)
+        {
+            builder.Services.AddFastSharpEndpoints();
+        }
+        else
+        {
+            builder.Services.AddFastSharpEndpoints(configureOptions);
+        }
+
         var app = builder.Build();
         app.MapFastSharpEndpoints();
         await app.StartAsync();
@@ -234,6 +264,206 @@ public class FastSharpEndpointsTests
 
         var postResponse = await client.PostAsJsonAsync("/api/nocontext", new { Id = 1 });
         Assert.Equal(HttpStatusCode.NotFound, postResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddFastSharpEndpoints_WithoutAssemblies_RegistersAndMapsTheConsumerAssembly()
+    {
+        await using var app = await CreateAppWithDefaultAssemblyAsync();
+        var registration = app.Services.GetRequiredService<FastSharpAssemblyRegistration>();
+
+        Assert.Contains(typeof(SampleModule).Assembly, registration.Assemblies);
+        Assert.DoesNotContain(typeof(DependencyInjection).Assembly, registration.Assemblies);
+
+        var response = await app.GetTestClient().GetAsync("/api/nocontext/ping");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddFastSharpEndpoints_ConfigureOnly_RegistersAndMapsTheConsumerAssembly()
+    {
+        await using var app = await CreateAppWithDefaultAssemblyAsync(options => options.MaxPageSize = 25);
+        var registration = app.Services.GetRequiredService<FastSharpAssemblyRegistration>();
+
+        Assert.Contains(typeof(SampleModule).Assembly, registration.Assemblies);
+        Assert.DoesNotContain(typeof(DependencyInjection).Assembly, registration.Assemblies);
+
+        var response = await app.GetTestClient().GetAsync("/api/nocontext/ping");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public void AddFastSharpEndpoints_RepeatedRegistrations_MergeDistinctAssemblies()
+    {
+        var services = new ServiceCollection();
+        var testAssembly = typeof(SampleModule).Assembly;
+        var modulesAssembly = typeof(DependencyInjection).Assembly;
+
+        services.AddFastSharpEndpoints(testAssembly);
+        services.AddFastSharpEndpoints(modulesAssembly);
+
+        using var provider = services.BuildServiceProvider();
+        var registration = provider.GetRequiredService<FastSharpAssemblyRegistration>();
+
+        Assert.Equal(2, registration.Assemblies.Count);
+        Assert.Contains(testAssembly, registration.Assemblies);
+        Assert.Contains(modulesAssembly, registration.Assemblies);
+        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(FastSharpAssemblyRegistration)));
+    }
+
+    [Fact]
+    public void AddFastSharpEndpoints_RepeatedRegistrations_DeduplicatesAssembliesAndServices()
+    {
+        var services = new ServiceCollection();
+        var assembly = typeof(SampleModule).Assembly;
+
+        services.AddFastSharpEndpoints(assembly);
+        services.AddFastSharpEndpoints(assembly);
+
+        using var provider = services.BuildServiceProvider();
+        var registration = provider.GetRequiredService<FastSharpAssemblyRegistration>();
+
+        Assert.Single(registration.Assemblies);
+        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(FastSharpAssemblyRegistration)));
+        Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(SampleModule)));
+    }
+
+    [Fact]
+    public void AddFastSharpEndpoints_FailedRegistration_DoesNotMutateServicesAndCanRetry()
+    {
+        var services = new ServiceCollection();
+        var existingAssembly = typeof(SampleModule).Assembly;
+        services.AddFastSharpEndpoints(existingAssembly);
+        var initialDescriptorCount = services.Count;
+
+        var assembly = typeof(DependencyInjection).Assembly;
+        Assert.True(FastSharpAssemblyRegistryStore.TryGetRegistry(assembly, out var originalRegistry));
+
+        try
+        {
+            FastSharpAssemblyRegistryStore.Register(new ProbeRegistry(assembly, shouldFail: true));
+
+            Assert.Throws<InvalidOperationException>(() => services.AddFastSharpEndpoints(assembly));
+            Assert.Equal(initialDescriptorCount, services.Count);
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(RegistrationProbe));
+
+            FastSharpAssemblyRegistryStore.Register(new ProbeRegistry(assembly, shouldFail: false));
+            services.AddFastSharpEndpoints(assembly);
+
+            using var provider = services.BuildServiceProvider();
+            var registration = provider.GetRequiredService<FastSharpAssemblyRegistration>();
+            Assert.Equal(2, registration.Assemblies.Count);
+            Assert.Contains(assembly, registration.Assemblies);
+            Assert.Single(services.Where(descriptor => descriptor.ServiceType == typeof(RegistrationProbe)));
+        }
+        finally
+        {
+            FastSharpAssemblyRegistryStore.Register(originalRegistry!);
+        }
+    }
+
+    [Fact]
+    public void Module_PreservesProtectedGroupConfigurationFieldType()
+    {
+        var field = typeof(FastSharp.Modules.Core.Module)
+            .GetField("_groupConfiguration", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        Assert.NotNull(field);
+        Assert.Equal(typeof(Action<RouteGroupBuilder>), field!.FieldType);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_NewLifecycleCustomOnlyModule_MapsInlineAndIncludedRoutesWithConventions()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var inlineResponse = await client.GetAsync("/api/lifecycle/inline");
+        Assert.Equal(HttpStatusCode.OK, inlineResponse.StatusCode);
+        Assert.Equal("lifecycle-inline", await inlineResponse.Content.ReadFromJsonAsync<string>());
+
+        var includedResponse = await client.GetAsync("/api/lifecycle/ping");
+        Assert.Equal(HttpStatusCode.OK, includedResponse.StatusCode);
+        Assert.Equal("lifecycle-pong", await includedResponse.Content.ReadFromJsonAsync<string>());
+
+        var inlineEndpoint = ((IEndpointRouteBuilder)app).DataSources
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Single(endpoint => endpoint.RoutePattern.RawText == "/api/lifecycle/inline");
+        var tags = inlineEndpoint.Metadata.GetMetadata<ITagsMetadata>();
+        Assert.NotNull(tags);
+        Assert.Contains("Lifecycle", tags!.Tags);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_NewLifecycleMixedModule_MapsCrudIncludedAndInlineRoutes()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/lifecycle-mixed/items", new TestModel { Id = 91, Name = "Lifecycle" });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var detailsResponse = await client.GetAsync("/api/lifecycle-mixed/details");
+        Assert.Equal(HttpStatusCode.OK, detailsResponse.StatusCode);
+        Assert.Equal("lifecycle-details", await detailsResponse.Content.ReadFromJsonAsync<string>());
+
+        var inlineResponse = await client.GetAsync("/api/lifecycle-mixed/inline");
+        Assert.Equal(HttpStatusCode.OK, inlineResponse.StatusCode);
+        Assert.Equal("lifecycle-mixed-inline", await inlineResponse.Content.ReadFromJsonAsync<string>());
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_RouteComposition_MapsQueuedEndpointsBeforeInvokingAddRoutes()
+    {
+        LegacyOrderingEndpoint.WasMapped = false;
+        await using var app = await CreateAppAsync();
+
+        Assert.True(LegacyOrderingEndpoint.WasMapped);
+        Assert.True(RouteOrderingModule.AddRoutesObservedLegacyEndpoint);
+
+        var legacyCrudResponse = await app.GetTestClient().GetAsync("/api/route-ordering/legacy-crud");
+        Assert.Equal(HttpStatusCode.OK, legacyCrudResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_RepeatedMapping_DoesNotDuplicateModuleRoutes()
+    {
+        await using var app = await CreateAppAsync(mappingCount: 2);
+        var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/api/lifecycle/inline");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var matchingEndpoints = ((IEndpointRouteBuilder)app).DataSources
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Count(endpoint => endpoint.RoutePattern.RawText == "/api/lifecycle/inline");
+        Assert.Equal(1, matchingEndpoints);
+    }
+
+    [Fact]
+    public void MapFastSharpEndpoints_FailedAssemblyMapping_CannotBeRetriedOrDuplicateEarlyRoutes()
+    {
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName($"FastSharp.MappingFailure.{Guid.NewGuid():N}"),
+            AssemblyBuilderAccess.Run);
+        FastSharpAssemblyRegistryStore.Register(new PartiallyFailingRegistry(assembly));
+
+        var builder = WebApplication.CreateBuilder();
+        var app = builder.Build();
+
+        var initialFailure = Assert.Throws<InvalidOperationException>(() => app.MapFastSharpEndpoints(assembly));
+        Assert.Equal("Simulated registry mapping failure.", initialFailure.Message);
+
+        var retryFailure = Assert.Throws<InvalidOperationException>(() => app.MapFastSharpEndpoints(assembly));
+        Assert.Contains("one-shot per application", retryFailure.Message, StringComparison.Ordinal);
+
+        var earlyRoutes = ((IEndpointRouteBuilder)app).DataSources
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Count(endpoint => endpoint.RoutePattern.RawText == "/mapping-failure/early");
+        Assert.Equal(1, earlyRoutes);
     }
 
     [Fact]
@@ -497,5 +727,46 @@ public class FastSharpEndpointsTests
         var body = await validResponse.Content.ReadFromJsonAsync<ValidationRequest>();
         Assert.NotNull(body);
         Assert.Equal("valid", body!.Name);
+    }
+
+    private sealed class PartiallyFailingRegistry(Assembly assembly) : IFastSharpAssemblyRegistry
+    {
+        public Assembly Assembly { get; } = assembly;
+
+        public void RegisterServices(IServiceCollection services)
+        {
+        }
+
+        public void MapEndpoints(IEndpointRouteBuilder app)
+        {
+            app.MapGet("/mapping-failure/early", () => "early");
+            throw new InvalidOperationException("Simulated registry mapping failure.");
+        }
+
+        public IReadOnlyList<Type> GetEndpointTypes(string namespacePrefix) => [];
+    }
+
+    private sealed class RegistrationProbe
+    {
+    }
+
+    private sealed class ProbeRegistry(Assembly assembly, bool shouldFail) : IFastSharpAssemblyRegistry
+    {
+        public Assembly Assembly { get; } = assembly;
+
+        public void RegisterServices(IServiceCollection services)
+        {
+            services.AddSingleton<RegistrationProbe>();
+            if (shouldFail)
+            {
+                throw new InvalidOperationException("Simulated registry registration failure.");
+            }
+        }
+
+        public void MapEndpoints(IEndpointRouteBuilder app)
+        {
+        }
+
+        public IReadOnlyList<Type> GetEndpointTypes(string namespacePrefix) => [];
     }
 }

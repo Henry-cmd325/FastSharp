@@ -8,8 +8,8 @@
 
 FastSharp can be customized at two levels:
 
-- **Module level** with `ConfigureModule(...)`
-- **CRUD level** with `AddCRUD(...)` and `ICrudEndpoints<TDbContext>`
+- **Module level** with `Configure(ModuleConfiguration)` for the prefix and shared conventions
+- **Route composition** with `AddRoutes(RouteGroupBuilder)` for CRUD, included endpoints, and inline Minimal API routes
 
 Remember the current perspective of the library:
 
@@ -17,9 +17,9 @@ Remember the current perspective of the library:
 - **Endpoints** implement behavior
 - **`AddCRUD`** is optional
 
-Customization of generated CRUD endpoints is done in your module's constructor via the `AddCRUD` method. The first parameter is the base route (use a **leading slash**, e.g. `"/products"`). The second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
+Customize generated CRUD endpoints in `AddRoutes` with `AddCRUD`. The first parameter is the base route (use a **leading slash**, e.g. `"/products"`). The second (optional) gives you `ICrudEndpoints<TDbContext>`, letting you apply shared configuration, disable endpoints, and define DTO contracts.
 
-To configure the module base group (applying options to all endpoints in the group), use `ConfigureModule`. Its configuration callback receives `IEndpointConventionBuilder`, the common Minimal API convention builder surface for metadata, authorization policies, filters, and similar group-level conventions.
+Use `Configure(ModuleConfiguration)` to set the module base group and shared conventions. Its `Conventions` callback receives `IEndpointConventionBuilder`, the common Minimal API convention builder surface for metadata, authorization policies, filters, and similar group-level conventions.
 
 ```csharp
 using FastSharp.Modules.Core;
@@ -29,11 +29,15 @@ using YourProject.Data;
 
 public class ProductsModule : Module<YourDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module
-            .WithDescription("Endpoints for managing products in the inventory"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module
+            .WithDescription("Endpoints for managing products in the inventory");
+    }
 
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         AddCRUD<Product, int>("/products", crud =>
         {
             // Example 1: Disable an endpoint
@@ -49,7 +53,7 @@ public class ProductsModule : Module<YourDbContext>
 
 The `endpoint` parameter in `ConfigureAll`, `Get`, `GetList`, `Create`, `Update`, and `Delete` is a `Microsoft.AspNetCore.Builder.RouteHandlerBuilder` (or similar, depending on the .NET version). This gives access to Minimal APIs extension methods like `WithOpenApi`, `RequireAuthorization`, `Accepts`, and `Produces`.
 
-Do not use `ConfigureModule` to map custom routes. Custom routes belong in `IEndpoint.Map(RouteGroupBuilder app)`, where FastSharp passes the module route group for route mapping.
+Do not use `Configure` to map custom routes. Use `AddRoutes` for small module-local routes and `IEndpoint.Map(RouteGroupBuilder app)` for substantial endpoint behavior.
 
 ---
 
@@ -62,9 +66,14 @@ FastSharp can be used in different ways depending on what the developer needs.
 ```csharp
 public class ProductsModule : Module<YourDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module.WithTags("Products"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module.WithTags("Products");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         AddCRUD<Product, int>("/products");
     }
 }
@@ -75,9 +84,14 @@ public class ProductsModule : Module<YourDbContext>
 ```csharp
 public class ProductsModule : Module<YourDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module.WithTags("Products"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module.WithTags("Products");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         AddCRUD<Product, int>("/products");
         Include<CheckStock>();
     }
@@ -89,9 +103,14 @@ public class ProductsModule : Module<YourDbContext>
 ```csharp
 public class UtilityModule : Module
 {
-    public UtilityModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module.WithTags("Utility"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module.WithTags("Utility");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         Include<StatusEndpoint>();
     }
 }
@@ -209,7 +228,7 @@ Besides CRUD endpoints, you can create your own by implementing `IEndpoint`. The
 
 Important: custom endpoints are mapped on the **module route group**, not inside each `AddCRUD(...)` route prefix.
 
-That route group is intentionally exposed only to `IEndpoint.Map(RouteGroupBuilder group)`. Module-level `ConfigureModule(...)` uses `IEndpointConventionBuilder` so module configuration focuses on shared conventions, not route mapping.
+`AddRoutes(RouteGroupBuilder group)` and `IEndpoint.Map(RouteGroupBuilder group)` receive the module route group. `Configure(ModuleConfiguration)` uses `IEndpointConventionBuilder` so configuration focuses on shared conventions, not route mapping.
 
 ## 1) Define the endpoint
 
@@ -241,9 +260,14 @@ using YourProject.Models;
 
 public class ProductsModule : Module<YourDbContext>
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module.WithTags("Products"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module.WithTags("Products");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         Include<CheckStock>();
     }
 }
@@ -255,7 +279,7 @@ If the endpoint maps:
 
 and the module prefix is:
 
-- `ConfigureModule("/api", ...)`
+- `configuration.Prefix = "/api"`
 
 the final route is:
 
@@ -267,21 +291,25 @@ not:
 
 unless the endpoint itself includes `/products` in its route template (for example `"/products/{id}/stock"`).
 
-The default module prefix is `/api` when you do not call `ConfigureModule(...)`.
+The default module prefix is `/api` when `Configure` does not change it.
 
 ## 3) Apply module-wide metadata to custom endpoints
 
-Because custom endpoints are mapped on the module route group, they share the group-level conventions configured in `ConfigureModule(...)`.
+Because custom endpoints are mapped on the module route group, they share the group-level conventions configured in `Configure(...)`.
 
 ```csharp
 public class ProductsModule : Module
 {
-    public ProductsModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", module => module
+        configuration.Prefix = "/api";
+        configuration.Conventions = module => module
             .WithTags("Products")
-            .WithDescription("Product module endpoints"));
+            .WithDescription("Product module endpoints");
+    }
 
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         Include<CheckStock>();
     }
 }

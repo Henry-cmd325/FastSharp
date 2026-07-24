@@ -33,7 +33,8 @@ This file is written for code agents that need to understand, modify, or extend 
 - `FastSharp.Modules/Core/Module.cs`
 - `Module` groups endpoints under a route prefix and supports custom-endpoint-only modules
 - `Module<TDbContext>` adds EF Core CRUD support
-- `ConfigureModule("/api", ...)` sets the base route group and exposes `IEndpointConventionBuilder` for shared metadata, policies, filters, and other module-level conventions
+- `Configure(ModuleConfiguration)` sets the base route group and exposes `IEndpointConventionBuilder` through `Conventions` for shared metadata, policies, filters, and other module-level conventions
+- `AddRoutes(RouteGroupBuilder)` composes CRUD, included endpoints, and small inline Minimal API routes; `ConfigureModule(...)` remains compatibility-only
 - In the current project language, modules are closer to contracts/composition units than direct request handlers
 
 ### CRUD registration
@@ -63,7 +64,7 @@ This file is written for code agents that need to understand, modify, or extend 
 
 Given:
 
-- `ConfigureModule("/api", ...)`
+- `configuration.Prefix = "/api"` in `Configure(...)`
 - `AddCRUD<Product, int>("/products")`
 
 FastSharp generates:
@@ -185,10 +186,8 @@ Example from tests:
   - service registration and endpoint mapping
 - `Samples/QuickStart/Modules/Products/ProductsModule.cs`
   - example module with standard CRUD, alternate CRUD, and custom endpoint inclusion
-- `Samples/QuickStart/Modules/Products/Endpoints/CheckProductStock.cs`
-  - sample custom endpoint
 - `Samples/QuickStart/Modules/Products/Endpoints/UpdateProductsStock.cs`
-  - sample custom endpoint with FluentValidation integration
+  - sample complex included endpoint with FluentValidation integration
 - `Samples/QuickStart/Api.http`
   - executable sample requests
 

@@ -76,7 +76,7 @@ MyApi/
 │   └── Products/
 │       ├── ProductsModule.cs
 │       ├── Endpoints/
-│       │   └── CheckProductStock.cs
+│       │   └── UpdateProductsStock.cs
 │       └── DTOs/
 │           └── ProductDto.cs
 ├── Data/

@@ -7,7 +7,7 @@ public class TemplateTestFixture : IDisposable
 {
     public string TempArtifactsDir { get; }
     public string RepoRootDir { get; }
-    public string Version { get; } = "1.0.0-test";
+    public string Version { get; } = $"1.0.0-test-{Guid.NewGuid():N}";
 
     public TemplateTestFixture()
     {

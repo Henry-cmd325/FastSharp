@@ -108,14 +108,16 @@ using YourProject.Models;
 
 public class InventoryModule : Module<YourDbContext>
 {
-    public InventoryModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api/inventory", module =>
-        {
-            module.WithTags("Inventory")
-                 .WithDescription("Inventory domain endpoints");
-        });
+        configuration.Prefix = "/api/inventory";
+        configuration.Conventions = module => module
+            .WithTags("Inventory")
+            .WithDescription("Inventory domain endpoints");
+    }
 
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         // CRUDs for multiple entities
         AddCRUD<Product, int>("/products");
         AddCRUD<Category, int>("/categories");
@@ -134,7 +136,7 @@ In this example:
 
 Custom endpoints are mapped on the module route group. For example, if `CheckStock` maps `"/{id}/stock"`, the final route becomes `/api/inventory/{id}/stock`.
 
-`ConfigureModule(...)` configures that module group through `IEndpointConventionBuilder`, so it is the place for module-wide metadata and policies. Custom `IEndpoint.Map(RouteGroupBuilder app)` implementations receive the route group when they need to map concrete custom routes.
+`Configure(ModuleConfiguration)` configures that module group through `IEndpointConventionBuilder`, so it is the place for module-wide metadata and policies. `AddRoutes(RouteGroupBuilder routes)` and custom `IEndpoint.Map(RouteGroupBuilder app)` implementations receive the route group when they need to map concrete routes.
 
 ---
 
@@ -149,9 +151,14 @@ using FastSharp.Modules.Core;
 
 public sealed class HealthModule : Module
 {
-    public HealthModule()
+    protected override void Configure(ModuleConfiguration configuration)
     {
-        ConfigureModule("/api", group => group.WithTags("Health"));
+        configuration.Prefix = "/api";
+        configuration.Conventions = group => group.WithTags("Health");
+    }
+
+    protected override void AddRoutes(RouteGroupBuilder routes)
+    {
         Include<HealthPingEndpoint>();
     }
 }
