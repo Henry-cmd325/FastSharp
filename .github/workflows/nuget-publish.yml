@@ -9,6 +9,8 @@ jobs:
   publish:
     environment: nuget
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,5 +41,11 @@ jobs:
           dotnet pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
           dotnet pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
 
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+         user: ${{ secrets.NUGET_USERNAME }}
+
       - name: Publish to NuGet
-        run: dotnet nuget push "./artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "./artifacts/*.nupkg" --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
