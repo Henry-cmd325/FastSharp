@@ -12,14 +12,12 @@ internal class DeleteEndpoint<TDbContext, TEntity, TKey>(Func<TKey, Expression<F
     where TEntity : class
     where TDbContext : DbContext
 {
-    private readonly Func<TKey, Expression<Func<TEntity, bool>>> _predicateFactory = predicateFactory;
-
     private async Task<Results<NoContent, NotFound>> DeleteEntityAsync(TKey id, TDbContext context, ILogger logger, CancellationToken ct)
     {
         FastSharpLogger.LogDeletingEntity(logger, EntityName, LoggingScope.FormatId(id));
         try
         {
-            var entity = await context.Set<TEntity>().Where(_predicateFactory(id)).FirstOrDefaultAsync(ct);
+            var entity = await context.Set<TEntity>().Where(predicateFactory(id)).FirstOrDefaultAsync(ct);
             if (entity is null)
             {
                 FastSharpLogger.LogEntityNotFound(logger, EntityName, LoggingScope.FormatId(id));

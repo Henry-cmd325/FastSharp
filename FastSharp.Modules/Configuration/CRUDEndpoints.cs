@@ -6,6 +6,10 @@ using System.Linq.Expressions;
 
 namespace FastSharp.Modules.Configuration;
 
+/// <summary>
+/// Internal implementation of <see cref="ICrudEndpoints{TDbContext}"/> created by FastSharp when you call <c>AddCRUD</c>.
+/// Configure this via the delegate passed to <c>AddCRUD</c> — do not instantiate directly.
+/// </summary>
 public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContext>
     where TEntity : class
     where TDbContext : DbContext
@@ -28,6 +32,13 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
     internal Func<TKey, Expression<Func<TEntity, bool>>> PredicateFactory;
     internal Expression<Func<TEntity, TKey>> IdSelector;
 
+    /// <summary>
+    /// Initializes a new <see cref="CRUDEndpoints{TDbContext, TEntity, TKey}"/> instance.
+    /// If <paramref name="idSelector"/> is omitted, <typeparamref name="TEntity"/> must implement <see cref="IModel{TKey}"/>.
+    /// </summary>
+    /// <param name="routePrefix">The route prefix appended to the module's base path.</param>
+    /// <param name="idSelector">Expression that selects the entity's primary key. Required when the entity does not implement <see cref="IModel{TKey}"/>.</param>
+    /// <param name="crudPrefix">The fully combined route prefix used for location headers. Defaults to <paramref name="routePrefix"/>.</param>
     public CRUDEndpoints(string routePrefix = "", Expression<Func<TEntity, TKey>>? idSelector = null, string? crudPrefix = null)
     {
         RoutePrefix = routePrefix;
@@ -82,6 +93,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         _ => null
     };
 
+    /// <inheritdoc/>
     public void DisableEndpoint(GenericEndpoint endpointName)
     {
         if (endpointName == GenericEndpoint.All)
@@ -101,13 +113,16 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(endpointToDisable, active: false);
     }
 
+    /// <inheritdoc/>
     public void ConfigureGroup(Action<RouteGroupBuilder>? configure) => ConfigGroup = configure;
 
+    /// <inheritdoc/>
     public void ConfigureAll(Action<RouteHandlerBuilder> configure)
     {
         ConfigAll = CRUDEndpoints<TDbContext, TEntity, TKey>.CreateEndpointOptions(configure);
     }
 
+    /// <inheritdoc/>
     public void ConfigureAll<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         ConfigAll = CRUDEndpoints<TDbContext, TEntity, TKey>.CreateEndpointOptions(configure);
@@ -126,6 +141,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void ConfigureAll<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class
     {
         ConfigAll = CRUDEndpoints<TDbContext, TEntity, TKey>.CreateEndpointOptions(configure);
@@ -144,9 +160,11 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void Get(Action<RouteHandlerBuilder>? configure = null) =>
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetByIdEndpoint, configure);
 
+    /// <inheritdoc/>
     public void Get<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         GetByIdEndpoint = new GetByIdEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory);
@@ -161,9 +179,11 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
             listEndpoint.MaxPageSizeOverride = ListMaxPageSize;
     }
 
+    /// <inheritdoc/>
     public void GetList(Action<RouteHandlerBuilder>? configure = null) =>
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
 
+    /// <inheritdoc/>
     public void GetList(int maxPageSize, Action<RouteHandlerBuilder>? configure = null)
     {
         ListMaxPageSize = maxPageSize;
@@ -171,6 +191,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void GetList<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         GetListEndpoint = new GetListEndpoint<TDbContext, TEntity, TKey, TDto>(IdSelector);
@@ -178,6 +199,7 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void GetList<TDto>(int maxPageSize, Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         ListMaxPageSize = maxPageSize;
@@ -186,33 +208,40 @@ public class CRUDEndpoints<TDbContext, TEntity, TKey> : ICrudEndpoints<TDbContex
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(GetListEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void Create(Action<RouteHandlerBuilder>? configure = null) =>
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
 
+    /// <inheritdoc/>
     public void Create<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TDto>(CrudPrefix);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void Create<TRequest, TResponse>(Action<RouteHandlerBuilder>? configure = null) where TRequest : class where TResponse : class
     {
         CreateEndpoint = new CreateEndpoint<TDbContext, TEntity, TKey, TRequest, TResponse>(CrudPrefix);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(CreateEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void Update(Action<RouteHandlerBuilder>? configure = null) =>
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
 
+    /// <inheritdoc/>
     public void Update<TDto>(Action<RouteHandlerBuilder>? configure = null) where TDto : class
     {
         UpdateEndpoint = new UpdateEndpoint<TDbContext, TEntity, TKey, TDto>(PredicateFactory, IdSelector);
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(UpdateEndpoint, configure);
     }
 
+    /// <inheritdoc/>
     public void Delete(Action<RouteHandlerBuilder>? configure = null) =>
         CRUDEndpoints<TDbContext, TEntity, TKey>.ConfigureEndpoint(DeleteEndpoint, configure);
 
+    /// <inheritdoc cref="ICrudEndpoints{TDbContext}.Map"/>
     public void Map(RouteGroupBuilder group, ILogger logger, string moduleRoutePrefix)
     {
         var entityName = typeof(TEntity).Name;

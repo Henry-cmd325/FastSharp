@@ -15,4 +15,10 @@ namespace FastSharp.Tests.Dtos
     {
         public int Id { get; set; }
     }
+
+    public sealed class TestModelValidatedDto
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
 }

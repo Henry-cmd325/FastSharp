@@ -7,10 +7,18 @@ using System.Linq.Expressions;
 
 namespace FastSharp.Modules.Core;
 
+/// <summary>
+/// Base class for a FastSharp module. Defines a route group and composes custom <see cref="IEndpoint"/> implementations.
+/// Inherit from this class when your module does not need Entity Framework CRUD generation.
+/// For CRUD support, inherit from <see cref="Module{TDbContext}"/> instead.
+/// </summary>
 public abstract class Module : IFastModule
 {
+    /// <summary>The endpoint types registered via <see cref="Include{TEndpoint}"/>.</summary>
     protected readonly List<Type> _moduleEndpoints = [];
+    /// <summary>Optional configuration action applied to the module's <see cref="RouteGroupBuilder"/> at map time.</summary>
     protected Action<RouteGroupBuilder>? _groupConfiguration;
+    /// <summary>The URL prefix for this module's route group. Defaults to <c>"/api"</c>.</summary>
     protected string urlPrefix = "/api";
 
     // This is implemented explicitly so the method cannot be called directly by consumers,
@@ -20,7 +28,7 @@ public abstract class Module : IFastModule
         MapEndpoints(app);
     }
 
-    protected virtual void MapEndpoints(IEndpointRouteBuilder app)
+    internal virtual void MapEndpoints(IEndpointRouteBuilder app)
     {
         var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
             ?? NullLogger.Instance;
@@ -40,15 +48,15 @@ public abstract class Module : IFastModule
     }
 
     /// <summary>
-    /// Configures the routing module with a specified URL prefix and a configuration action for the route group.
+    /// Configures the routing module with a specified URL prefix and shared endpoint conventions for the route group.
     /// </summary>
     /// <param name="prefix">The URL prefix to apply to the route group (use a leading slash, e.g. <c>"/api"</c>). This prefix is the base path for all routes defined within the module.</param>
-    /// <param name="configure">An action that configures the route group. Use this action to define routes and additional settings within
-    /// the specified prefix.</param>
-    protected void ConfigureModule(string prefix, Action<RouteGroupBuilder> configure)
+    /// <param name="configure">An action that configures shared endpoint conventions for the route group, such as metadata,
+    /// authorization policies, filters, and OpenAPI settings. Define custom routes in <see cref="IEndpoint.Map(RouteGroupBuilder)"/>.</param>
+    protected void ConfigureModule(string prefix, Action<IEndpointConventionBuilder> configure)
     {
         urlPrefix = prefix;
-        _groupConfiguration = configure;
+        _groupConfiguration = group => configure(group);
     }
 
     /// <summary>
@@ -64,12 +72,17 @@ public abstract class Module : IFastModule
     }
 }
 
-//Module with built-in support for CRUD endpoints based on Entity Framework Core DbContext.
+/// <summary>
+/// Base class for a FastSharp module with built-in CRUD endpoint generation backed by Entity Framework Core.
+/// Inherit from this class to use <c>AddCRUD</c> and compose custom <see cref="IEndpoint"/> implementations
+/// within the same route group.
+/// </summary>
+/// <typeparam name="TDbContext">The Entity Framework <see cref="DbContext"/> used to back generated CRUD endpoints.</typeparam>
 public abstract class Module<TDbContext> : Module where TDbContext : DbContext
 {
     private readonly List<ICrudEndpoints<TDbContext>> _crudOptionsList = [];
 
-    protected override void MapEndpoints(IEndpointRouteBuilder app)
+    internal override void MapEndpoints(IEndpointRouteBuilder app)
     {
         var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(FastSharpLogger.CategoryName)
             ?? NullLogger.Instance;

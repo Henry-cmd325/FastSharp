@@ -12,5 +12,8 @@ public sealed class ValidationEndpoint : IEndpoint
     {
         app.MapPost("/validation", (ValidationRequest request) => Results.Ok(request))
             .WithValidation<ValidationRequest>();
+
+        app.MapPost("/validation/missing-target", () => Results.Ok("missing-target"))
+            .WithValidation<ValidationRequest>();
     }
 }

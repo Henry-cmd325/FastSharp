@@ -3,10 +3,15 @@ using FluentValidation;
 
 namespace FastSharp.Modules.Filters;
 
+/// <summary>
+/// Endpoint filter that validates the request body against a registered FluentValidation <c>IValidator&lt;T&gt;</c>.
+/// Apply via <see cref="Core.FastSharpExtensions.WithValidation{T}"/> — do not register directly.
+/// </summary>
 public class ValidationFilter<T> : IEndpointFilter where T : class
 {
     private static readonly string EntityName = typeof(T).Name;
 
+    /// <inheritdoc/>
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var validator = context.HttpContext.RequestServices.GetService<IValidator<T>>();
@@ -17,8 +22,7 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
 
         if (context.Arguments.FirstOrDefault(a => a?.GetType() == typeof(T)) is not T argument)
         {
-            // This should not happen if the filter is applied correctly
-            return Results.Problem("Validation target not found.", statusCode: 500);
+            return await next(context);
         }
 
         var validationResult = await validator.ValidateAsync(argument);

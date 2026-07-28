@@ -23,7 +23,7 @@ This file is written for code agents that need to understand, modify, or extend 
 - Make modules the main composition unit and endpoints the main implementation unit
 - Keep CRUD generation available but optional
 - Reduce boilerplate for Minimal API CRUD endpoints when CRUD is desired
-- Keep customization flexible by exposing native `RouteHandlerBuilder` configuration points
+- Keep customization flexible by exposing native Minimal API convention builders (`IEndpointConventionBuilder` at module level and `RouteHandlerBuilder` at CRUD endpoint level)
 - Support both generated CRUD endpoints and explicit custom endpoints in the same module
 
 ## Critical concepts
@@ -33,7 +33,7 @@ This file is written for code agents that need to understand, modify, or extend 
 - `FastSharp.Modules/Core/Module.cs`
 - `Module` groups endpoints under a route prefix and supports custom-endpoint-only modules
 - `Module<TDbContext>` adds EF Core CRUD support
-- `ConfigureModule("/api", ...)` sets the base route group and shared metadata
+- `ConfigureModule("/api", ...)` sets the base route group and exposes `IEndpointConventionBuilder` for shared metadata, policies, filters, and other module-level conventions
 - In the current project language, modules are closer to contracts/composition units than direct request handlers
 
 ### CRUD registration
@@ -85,7 +85,7 @@ Example from tests:
 
 - Route prefixes should use a leading slash
   - Good: `"/api"`, `"/products"`
-- Authorization should be applied through native Minimal API chaining on `RouteHandlerBuilder`
+- Authorization should be applied through native Minimal API chaining (`IEndpointConventionBuilder` for module-level policies, `RouteHandlerBuilder` for generated CRUD endpoint policies)
 - Use English for comments and documentation text
 - Prefer explicit endpoint registration with `Include<T>()` when possible
 - Do not frame the library as CRUD-first; frame it as modules + endpoints first, CRUD optional
@@ -133,6 +133,11 @@ Example from tests:
 
 - `FastSharp.Tests/Modules/NoContextModule.cs`
 - `FastSharp.Tests/Endpoints/NoContextPingEndpoint.cs`
+
+### If you need to scaffold modules, CRUD, endpoints, or validation
+
+- `skills/fastsharp/SKILL.md`
+  - repo-local Claude Code skill for convention-aware FastSharp scaffolding (`/fastsharp module|crud|endpoint|validation`); installable by consumers via `npx skills add Henry-cmd325/FastSharp`
 
 ### If you need expected behavior before editing core logic
 

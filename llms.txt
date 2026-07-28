@@ -66,7 +66,9 @@ Typical responsibilities:
 
 ### `ConfigureModule(...)`
 
-Defines the route group prefix and lets the developer apply shared metadata.
+Defines the route group prefix and lets the developer apply shared Minimal API conventions through `IEndpointConventionBuilder`.
+
+Use it for group-level metadata, authorization policies, filters, and similar conventions. Do not use it to map custom routes; custom route mapping belongs in `IEndpoint.Map(RouteGroupBuilder app)`.
 
 Example:
 
