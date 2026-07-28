@@ -39,8 +39,30 @@ FastSharp is not controller-based. Think in terms of domain modules, not MVC con
 
 - `FastSharp.Modules`: main package with modules, endpoint discovery, and CRUD generation
 - `FastSharp.Models`: lightweight package with shared abstractions such as `IModel<TKey>` and `PagedResult<T>`
+- `FastSharp.Templates`: public `dotnet new` template pack for creating a runnable FastSharp API
 
-In most API projects, the main package to install is `FastSharp.Modules`.
+In most API projects, install `FastSharp.Modules`; it brings `FastSharp.Models` transitively. Add `FastSharp.Models` directly only when a project needs its shared abstractions without the module and endpoint framework.
+
+## Public project template
+
+Install the published template pack and create a project with:
+
+```bash
+dotnet new install FastSharp.Templates
+dotnet new fastsharp-api -n MyApi --Database InMemory --EnableSwagger true
+```
+
+`--Database` supports `InMemory`, `SqlServer`, `Postgres`, and `MySql`. `--EnableSwagger` defaults to `true`. The generated project demonstrates EF Core CRUD and custom endpoints, but the library itself remains modules-first and CRUD-optional.
+
+## Agent skill
+
+FastSharp includes an agent-neutral scaffolding skill for modules, optional CRUD registrations, custom endpoints, and validation:
+
+```bash
+npx skills add Henry-cmd325/FastSharp
+```
+
+Use `/fastsharp module`, `/fastsharp crud`, `/fastsharp endpoint`, or `/fastsharp validation` with a compatible coding agent.
 
 ## Main building blocks
 
@@ -200,6 +222,8 @@ In `Program.cs`, the typical integration is:
 
 If the developer's modules live in another assembly, pass that assembly explicitly to both methods.
 
+FastSharp resolves modules and endpoints through a source-generated per-assembly registry. The `FastSharp.Modules` package delivers the generator as an analyzer, so normal package consumers should not add a separate `FastSharp.Generators` reference. Every assembly containing FastSharp modules or endpoints must reference `FastSharp.Modules` so its registry is generated.
+
 ## DTO support
 
 FastSharp supports DTOs in generated CRUD endpoints.
@@ -267,6 +291,8 @@ When helping a developer use FastSharp:
 - use `docs/how-to-fastsharp.md` when the developer needs guidance on how to structure a FastSharp project
 - mention `WithValidation<T>()` and `IValidator<T>` registration when the developer asks for validated custom endpoints
 - mention `AddFastSharpEndpoints()` and `MapFastSharpEndpoints()` in setup guidance
+- recommend the published `FastSharp.Templates` pack when the developer wants a runnable starting project
+- recommend the agent-neutral FastSharp skill when the developer wants convention-aware scaffolding
 
 ## Short summary
 

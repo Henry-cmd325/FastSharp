@@ -14,7 +14,7 @@ Use this skill when the user asks to scaffold or adjust FastSharp modules, CRUD 
 
 - Use leading slashes for owned route prefixes in `ConfigureModule`, `AddCRUD`, and Minimal API route templates.
 - Do not use an `AddCRUD<TEntity, TKey>` overload without an id selector unless `TEntity` implements `IModel<TKey>`; otherwise use the id-selector overload.
-- When `AddFastSharpEndpoints` scans explicit assemblies, require that the assembly references `FastSharp.Generators` so a source-generated `IFastSharpAssemblyRegistry` is produced for it.
+- Every assembly containing FastSharp modules or endpoints must receive the FastSharp generator/analyzer and emit an `IFastSharpAssemblyRegistry`. Normal consumers receive the analyzer through `FastSharp.Modules` and should not add a separate `FastSharp.Generators` reference.
 - Preserve native Minimal API chaining for metadata, authorization, and filters.
 
 ## Decision Gates

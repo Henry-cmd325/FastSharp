@@ -31,8 +31,10 @@ FastSharp is a NuGet library for building ASP.NET Core Minimal APIs organized by
 - **`FastSharp.Modules`** — core library: module base classes, CRUD endpoint generation, assembly scanning, DI extensions, FluentValidation filter
 - **`FastSharp.Models`** — shared abstractions (`IModel<TKey>`, `PagedResult<T>`); add this to projects that don't need the full core
 - **`FastSharp.Generators`** — Roslyn source generator that emits a per-assembly `IFastSharpAssemblyRegistry`, used at startup to discover modules and endpoints without reflection scanning
+- **`FastSharp.Templates`** — published `dotnet new` template pack; `fastsharp-api` creates a runnable EF Core-backed example with optional Swagger UI
 - **`FastSharp.Tests`** — integration tests using `WebApplicationFactory`-style in-memory test host; all behavior tests live here
 - **`Samples/QuickStart`** — runnable sample app; `Api.http` contains executable sample requests
+- **`skills/fastsharp`** — agent-neutral scaffolding skill for modules, optional CRUD, custom endpoints, and validation
 
 ### Core model
 
@@ -45,7 +47,7 @@ A **module** (`Module` or `Module<TDbContext>`) defines a route group and compos
 **Assembly scanning** (`DependencyInjection.cs`):
 - `AddFastSharpEndpoints(assembly)` registers modules, endpoints, and validators from one or more assemblies; defaults to calling assembly
 - `MapFastSharpEndpoints()` resolves registered modules and maps their route groups
-- Both methods require the assembly to have a source-generated `IFastSharpAssemblyRegistry` (produced by `FastSharp.Generators`); passing an assembly without one throws `InvalidOperationException`
+- Both methods require the assembly to have a source-generated `IFastSharpAssemblyRegistry`; `FastSharp.Modules` delivers `FastSharp.Generators` as an analyzer, so normal package consumers do not add a separate generator reference. An assembly without a generated registry throws `InvalidOperationException`.
 
 **CRUD generation** (`FastSharp.Modules/Core/Endpoints/`, `Configuration/`):
 - Entities used with the parameterless `AddCRUD` overload must implement `IModel<TKey>`

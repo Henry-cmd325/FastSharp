@@ -6,7 +6,7 @@ Use this file as the standalone FastSharp reference when scaffolding consumer pr
 
 - FastSharp is a lightweight C# ASP.NET Core Minimal APIs library.
 - The mental model is **modules first, endpoints as implementations, CRUD optional**.
-- Install the main packages with `dotnet add package FastSharp.Modules` and, when model abstractions are needed, `dotnet add package FastSharp.Models`.
+- Install `FastSharp.Modules` for the module and endpoint framework; it brings `FastSharp.Models` transitively. Install `FastSharp.Models` directly only when a project needs standalone abstractions without the framework.
 - `FastSharp.Modules` contains the core module, endpoint, validation, and CRUD support.
 - `FastSharp.Models` contains shared abstractions such as `IModel<TKey>` and `PagedResult<T>`.
 - CRUD generation is a shortcut, not the default framing for every module.
@@ -94,9 +94,9 @@ Source: `docs/validation.md`, `Samples/QuickStart/Modules/Products/Endpoints/Upd
 
 ## Source-generated registry (self-contained)
 
-FastSharp resolves module and endpoint metadata through a source-generated registry, not runtime reflection scanning. The `FastSharp.Generators` source generator emits a per-assembly `IFastSharpAssemblyRegistry` that registers itself through a `ModuleInitializer`; `AddFastSharpEndpoints(...)` and `MapFastSharpEndpoints(...)` resolve metadata from that store.
+FastSharp resolves module and endpoint metadata through a source-generated registry, not runtime reflection scanning. The `FastSharp.Generators` source generator emits a per-assembly `IFastSharpAssemblyRegistry` that registers itself through a `ModuleInitializer`; `AddFastSharpEndpoints(...)` and `MapFastSharpEndpoints(...)` resolve metadata from that store. `FastSharp.Modules` delivers the generator as an analyzer, so normal package consumers should not add a separate `FastSharp.Generators` reference.
 
-Consequence: any assembly passed to `AddFastSharpEndpoints`/`MapFastSharpEndpoints` must reference `FastSharp.Generators` so its registry is generated. Otherwise `FastSharpAssemblyRegistryStore.GetRequiredRegistry` throws `InvalidOperationException` at startup. If a module lives in a different assembly than `Program.cs`, wire that assembly to the generator before calling the scan methods.
+Consequence: every assembly containing FastSharp modules or endpoints must reference `FastSharp.Modules` so the analyzer generates its registry. Otherwise `FastSharpAssemblyRegistryStore.GetRequiredRegistry` throws `InvalidOperationException` at startup. If a module lives in a different assembly than `Program.cs`, reference `FastSharp.Modules` from that assembly before passing it to the registration and mapping methods.
 
 Source: `docs/assembly-scanning.md`, `docs/ADR/001-registry-lifecycle.md`
 
@@ -206,7 +206,7 @@ Source: `Samples/QuickStart/Modules/Products/Endpoints/UpdateProductsStock.cs`
 - Entities without `IModel<TKey>` use `AddCRUD<TEntity, TKey>(route, entity => entity.Id, ...)`.
 - Custom endpoints are included with `Include<TEndpoint>()` and map on the module route group.
 - Validation on custom endpoints uses `.WithValidation<TRequest>()`; registering a validator alone is not enough.
-- Assemblies passed to `AddFastSharpEndpoints`/`MapFastSharpEndpoints` reference `FastSharp.Generators` so a source-generated registry exists.
+- Every assembly containing FastSharp modules or endpoints references `FastSharp.Modules` so its analyzer generates the required registry; normal consumers do not reference `FastSharp.Generators` separately.
 - Generated comments and XML docs are in English.
 
 ## Minimal Examples
