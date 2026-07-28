@@ -1,69 +1,69 @@
 using System.Diagnostics;
+using System.IO.Compression;
+using System.Security;
 using Xunit;
 
 namespace FastSharp.Tests;
 
 public class TemplateTestFixture : IDisposable
 {
+    public string TempRootDir { get; }
     public string TempArtifactsDir { get; }
+    public string TempSourceDir { get; }
+    public string DotnetCliHomeDir { get; }
+    public string NugetPackagesDir { get; }
     public string RepoRootDir { get; }
-    public string Version { get; } = "1.0.0-test";
+    public string Version { get; } = $"1.0.0-test-{Guid.NewGuid():N}";
+    public IReadOnlyDictionary<string, string> EnvironmentVariables { get; }
 
     public TemplateTestFixture()
     {
         RepoRootDir = FindRepoRootDir();
-        TempArtifactsDir = Path.Combine(Path.GetTempPath(), "FastSharpTempArtifacts_" + Guid.NewGuid().ToString("N"));
+        TempRootDir = Path.Combine(Path.GetTempPath(), "FastSharpTemplateTests_" + Guid.NewGuid().ToString("N"));
+        TempArtifactsDir = Path.Combine(TempRootDir, "artifacts");
+        TempSourceDir = Path.Combine(TempRootDir, "source");
+        DotnetCliHomeDir = Path.Combine(TempRootDir, "dotnet-cli-home");
+        NugetPackagesDir = Path.Combine(TempRootDir, "nuget-packages");
+        Directory.CreateDirectory(TempRootDir);
         Directory.CreateDirectory(TempArtifactsDir);
+        Directory.CreateDirectory(TempSourceDir);
+        Directory.CreateDirectory(DotnetCliHomeDir);
+        Directory.CreateDirectory(NugetPackagesDir);
+        EnvironmentVariables = new Dictionary<string, string>
+        {
+            ["DOTNET_CLI_HOME"] = DotnetCliHomeDir,
+            ["NUGET_PACKAGES"] = NugetPackagesDir,
+            ["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1"
+        };
 
-        // 1. Pack Models and Modules with test version
-        RunCommand("dotnet", $"pack FastSharp.Models/FastSharp.Models.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", RepoRootDir);
-        RunCommand("dotnet", $"pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", RepoRootDir);
+        CopyPackSources();
 
-        // 2. Temporarily rewrite FastSharpApi.csproj to reference the test version, then pack the templates
-        var templateCsprojPath = Path.Combine(RepoRootDir, "FastSharp.Templates", "content", "FastSharp.Template.Api", "FastSharpApi.csproj");
+        // Pack private source copies so tests never modify tracked files or shared build output.
+        RunCommand("dotnet", $"pack FastSharp.Models/FastSharp.Models.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", TempSourceDir, EnvironmentVariables);
+        RunCommand("dotnet", $"pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", TempSourceDir, EnvironmentVariables);
+
+        // Rewrite only the copied template content before packing it.
+        var templateCsprojPath = Path.Combine(TempSourceDir, "FastSharp.Templates", "content", "FastSharp.Template.Api", "FastSharpApi.csproj");
         var originalCsprojContent = File.ReadAllText(templateCsprojPath);
-        var testCsprojContent = originalCsprojContent.Replace("1.0.0-beta.11", Version);
+        var testCsprojContent = originalCsprojContent.Replace("1.0.0-beta.13", Version);
         File.WriteAllText(templateCsprojPath, testCsprojContent);
-        
-        try
-        {
-            RunCommand("dotnet", $"pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", RepoRootDir);
-        }
-        finally
-        {
-            File.WriteAllText(templateCsprojPath, originalCsprojContent);
-        }
 
-        // 3. Uninstall any pre-existing templates
-        try
-        {
-            RunCommand("dotnet", "new uninstall FastSharp.Templates", RepoRootDir);
-        }
-        catch
-        {
-            // Ignore error if it was not installed
-        }
+        RunCommand("dotnet", $"pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", TempSourceDir, EnvironmentVariables);
+        VerifyPackedModuleUsesLocalModelVersion();
 
-        // 4. Install the generated test template
+        // The fixture-specific DOTNET_CLI_HOME isolates template installation from other tests and users.
         var templateNupkg = Path.Combine(TempArtifactsDir, $"FastSharp.Templates.{Version}.nupkg");
-        RunCommand("dotnet", $"new install \"{templateNupkg}\"", RepoRootDir);
+        RunCommand("dotnet", $"new install \"{templateNupkg}\"", TempSourceDir, EnvironmentVariables);
     }
 
     public void Dispose()
     {
-        // 1. Uninstall test template
+        // Template state and all generated packages live under the fixture's private root.
         try
         {
-            RunCommand("dotnet", "new uninstall FastSharp.Templates", RepoRootDir);
-        }
-        catch { }
-
-        // 2. Clean up temporary artifacts directory
-        try
-        {
-            if (Directory.Exists(TempArtifactsDir))
+            if (Directory.Exists(TempRootDir))
             {
-                Directory.Delete(TempArtifactsDir, true);
+                Directory.Delete(TempRootDir, true);
             }
         }
         catch { }
@@ -79,7 +79,56 @@ public class TemplateTestFixture : IDisposable
         return dir?.FullName ?? throw new InvalidOperationException("Could not find repository root containing FastSharp.slnx");
     }
 
-    public static void RunCommand(string fileName, string arguments, string workingDirectory)
+    private void CopyPackSources()
+    {
+        foreach (var directoryName in new[] { "FastSharp.Models", "FastSharp.Generators", "FastSharp.Modules", "FastSharp.Templates" })
+        {
+            CopyDirectory(Path.Combine(RepoRootDir, directoryName), Path.Combine(TempSourceDir, directoryName));
+        }
+
+        foreach (var fileName in new[] { "README.md", "LICENSE", "Gemini_Generated_Image_52oeva52oeva52oe.png" })
+        {
+            File.Copy(Path.Combine(RepoRootDir, fileName), Path.Combine(TempSourceDir, fileName));
+        }
+    }
+
+    private void VerifyPackedModuleUsesLocalModelVersion()
+    {
+        var packagePath = Path.Combine(TempArtifactsDir, $"FastSharp.Modules.{Version}.nupkg");
+        using var package = ZipFile.OpenRead(packagePath);
+        var nuspec = package.GetEntry("FastSharp.Modules.nuspec")
+            ?? throw new InvalidOperationException("The packed FastSharp.Modules nuspec is missing.");
+        using var reader = new StreamReader(nuspec.Open());
+        var nuspecContent = reader.ReadToEnd();
+
+        if (!nuspecContent.Contains("FastSharp.Models", StringComparison.Ordinal) ||
+            !nuspecContent.Contains(Version, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The packed FastSharp.Modules package does not depend on the fixture's FastSharp.Models version.");
+        }
+    }
+
+    private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        Directory.CreateDirectory(destinationDirectory);
+        foreach (var file in Directory.EnumerateFiles(sourceDirectory))
+        {
+            File.Copy(file, Path.Combine(destinationDirectory, Path.GetFileName(file)));
+        }
+
+        foreach (var directory in Directory.EnumerateDirectories(sourceDirectory))
+        {
+            var directoryName = Path.GetFileName(directory);
+            if (directoryName is "bin" or "obj")
+            {
+                continue;
+            }
+
+            CopyDirectory(directory, Path.Combine(destinationDirectory, directoryName));
+        }
+    }
+
+    public static void RunCommand(string fileName, string arguments, string workingDirectory, IReadOnlyDictionary<string, string>? environmentVariables = null)
     {
         using var process = new Process
         {
@@ -94,6 +143,14 @@ public class TemplateTestFixture : IDisposable
                 CreateNoWindow = true
             }
         };
+
+        if (environmentVariables is not null)
+        {
+            foreach (var environmentVariable in environmentVariables)
+            {
+                process.StartInfo.Environment[environmentVariable.Key] = environmentVariable.Value;
+            }
+        }
 
         process.Start();
         
@@ -141,16 +198,40 @@ public class TemplateScaffoldingTests : IClassFixture<TemplateTestFixture>
             TemplateTestFixture.RunCommand(
                 "dotnet", 
                 $"new fastsharp-api -n \"{projectName}\" --Database \"{databaseProvider}\" --EnableSwagger {enableSwagger.ToString().ToLower()} -o \"{testOutputDir}\"", 
-                _fixture.RepoRootDir
+                _fixture.TempSourceDir,
+                _fixture.EnvironmentVariables
             );
 
-            // 2. Build the project using the temporary artifacts directory as an additional NuGet source
+            // Restore against the private packages directory. A unique version guarantees FastSharp packages
+            // must come from this fixture's artifacts rather than a published or global-cache package.
             var csprojFile = Path.Combine(testOutputDir, $"{projectName}.csproj");
+            var nugetConfigPath = Path.Combine(testOutputDir, "NuGet.Config");
+            File.WriteAllText(nugetConfigPath, $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="fixture-artifacts" value="{SecurityElement.Escape(_fixture.TempArtifactsDir)}" />
+                    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """);
             TemplateTestFixture.RunCommand(
                 "dotnet", 
-                $"build \"{csprojFile}\" /p:RestoreAdditionalProjectSources=\"{_fixture.TempArtifactsDir}\"", 
-                _fixture.RepoRootDir
+                $"restore \"{csprojFile}\" --configfile \"{nugetConfigPath}\"",
+                _fixture.TempSourceDir,
+                _fixture.EnvironmentVariables
             );
+            TemplateTestFixture.RunCommand(
+                "dotnet",
+                $"build \"{csprojFile}\" --no-restore",
+                _fixture.TempSourceDir,
+                _fixture.EnvironmentVariables
+            );
+
+            var assetsFile = Path.Combine(testOutputDir, "obj", "project.assets.json");
+            var assetsContent = File.ReadAllText(assetsFile);
+            Assert.Contains($"FastSharp.Modules/{_fixture.Version}", assetsContent, StringComparison.Ordinal);
         }
         finally
         {

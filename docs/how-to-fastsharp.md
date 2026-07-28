@@ -20,7 +20,7 @@ The basic template is available in this repository for contributor and local val
 
 ```bash
 dotnet pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o ./artifacts
-dotnet new install ./artifacts/FastSharp.Templates.1.0.0-beta.11.nupkg
+dotnet new install ./artifacts/FastSharp.Templates.1.0.0-beta.13.nupkg
 dotnet new fastsharp-api -n MyApi --Database InMemory --EnableSwagger true
 cd MyApi
 dotnet run

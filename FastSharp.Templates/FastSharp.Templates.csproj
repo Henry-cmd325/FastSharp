@@ -4,7 +4,7 @@
     <PackageType>Template</PackageType>
     <PackageId>FastSharp.Templates</PackageId>
     <Title>FastSharp Project Templates</Title>
-    <Version>1.0.0-beta.11</Version>
+    <Version>1.0.0-beta.13</Version>
     <Authors>ikeredu</Authors>
     <Description>Templates for creating modular ASP.NET Core APIs using FastSharp.</Description>
     <RepositoryUrl>https://github.com/Henry-cmd325/FastSharp</RepositoryUrl>

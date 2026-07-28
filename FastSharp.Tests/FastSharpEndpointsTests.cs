@@ -6,15 +6,19 @@ using FastSharp.Tests.Context;
 using FastSharp.Tests.Dtos;
 using FastSharp.Tests.Endpoints;
 using FastSharp.Tests.Modules;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 using Xunit;
 
 namespace FastSharp.Tests;
@@ -29,11 +33,16 @@ public class FastSharpEndpointsTests
         builder.Services.AddSingleton(databaseRoot);
         builder.Services.AddDbContext<TestDbContext>(options =>
             options.UseInMemoryDatabase("FastSharpTests", databaseRoot));
+        builder.Services.AddAuthentication("Test")
+            .AddScheme<AuthenticationSchemeOptions, RejectAuthenticationHandler>("Test", _ => { });
+        builder.Services.AddAuthorization();
         if (configureOptions is null)
             builder.Services.AddFastSharpEndpoints(typeof(SampleModule).Assembly);
         else
             builder.Services.AddFastSharpEndpoints(configureOptions, typeof(SampleModule).Assembly);
         var app = builder.Build();
+        app.UseAuthentication();
+        app.UseAuthorization();
         app.MapFastSharpEndpoints();
         await app.StartAsync();
         return app;
@@ -217,6 +226,19 @@ public class FastSharpEndpointsTests
 
         var ungroupedResponse = await client.GetAsync("/api/items");
         Assert.Equal(HttpStatusCode.NotFound, ungroupedResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_ConfigureModule_AppliesConventionsToCrudAndCustomEndpoints()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var crudResponse = await client.PostAsJsonAsync("/api/convention/items", new TestModel { Id = 11, Name = "Configured" });
+        Assert.Equal(HttpStatusCode.Unauthorized, crudResponse.StatusCode);
+
+        var customResponse = await client.GetAsync("/api/convention/custom/ping");
+        Assert.Equal(HttpStatusCode.Unauthorized, customResponse.StatusCode);
     }
 
     [Fact]
@@ -427,6 +449,11 @@ public class FastSharpEndpointsTests
 
         var invalidCreateResponse = await client.PostAsJsonAsync("/api/dto-validation", new TestModelValidatedDto { Id = 70, Name = string.Empty });
         Assert.Equal(HttpStatusCode.BadRequest, invalidCreateResponse.StatusCode);
+        using (var createProblem = await JsonDocument.ParseAsync(await invalidCreateResponse.Content.ReadAsStreamAsync()))
+        {
+            Assert.True(createProblem.RootElement.TryGetProperty("errors", out var errors));
+            Assert.True(errors.TryGetProperty(nameof(TestModelValidatedDto.Name), out _));
+        }
 
         using (var scope = app.Services.CreateScope())
         {
@@ -437,6 +464,11 @@ public class FastSharpEndpointsTests
 
         var invalidUpdateResponse = await client.PutAsJsonAsync("/api/dto-validation/70", new TestModelValidatedDto { Id = 70, Name = string.Empty });
         Assert.Equal(HttpStatusCode.BadRequest, invalidUpdateResponse.StatusCode);
+        using (var updateProblem = await JsonDocument.ParseAsync(await invalidUpdateResponse.Content.ReadAsStreamAsync()))
+        {
+            Assert.True(updateProblem.RootElement.TryGetProperty("errors", out var errors));
+            Assert.True(errors.TryGetProperty(nameof(TestModelValidatedDto.Name), out _));
+        }
 
         var getResponse = await client.GetAsync("/api/dto-validation/70");
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
@@ -497,5 +529,28 @@ public class FastSharpEndpointsTests
         var body = await validResponse.Content.ReadFromJsonAsync<ValidationRequest>();
         Assert.NotNull(body);
         Assert.Equal("valid", body!.Name);
+    }
+
+    [Fact]
+    public async Task MapFastSharpEndpoints_WithValidation_SkipsValidationWhenTheTargetArgumentIsMissing()
+    {
+        await using var app = await CreateAppAsync();
+        var client = app.GetTestClient();
+
+        var response = await client.PostAsync("/api/validation/missing-target", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("missing-target", await response.Content.ReadFromJsonAsync<string>());
+    }
+
+    private sealed class RejectAuthenticationHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
     }
 }
