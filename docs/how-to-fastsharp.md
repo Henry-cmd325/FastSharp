@@ -14,19 +14,18 @@ If you are just getting started, begin simple and only add complexity when your 
 
 ---
 
-## Use the basic template locally
+## Start with the basic template
 
-The basic template is available in this repository for contributor and local validation use. Build its template pack, then install it locally:
+Install the published template pack and create a new FastSharp API:
 
 ```bash
-dotnet pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o ./artifacts
-dotnet new install ./artifacts/FastSharp.Templates.1.0.0-beta.13.nupkg
+dotnet new install FastSharp.Templates
 dotnet new fastsharp-api -n MyApi --Database InMemory --EnableSwagger true
 cd MyApi
 dotnet run
 ```
 
-`FastSharp.Templates` is not yet published as a public NuGet template pack. The template demonstrates an EF Core-backed `Module<TDbContext>` with generated CRUD, custom endpoints, validation, and optional Swagger UI. `--Database` accepts `InMemory`, `SqlServer`, `Postgres`, or `MySql`; `--EnableSwagger` defaults to `true`.
+The template demonstrates an EF Core-backed `Module<TDbContext>` with generated CRUD, custom endpoints, validation, and optional Swagger UI. `--Database` accepts `InMemory`, `SqlServer`, `Postgres`, or `MySql`; `--EnableSwagger` defaults to `true`.
 
 The template is a starting point, not a required architecture. FastSharp keeps CRUD optional, and an application can use plain `Module` classes for custom endpoints without EF Core.
 

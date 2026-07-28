@@ -37,33 +37,31 @@ No controllers. No repetition. Just modules organized by domain.
 
 ## Installation
 
-For contributors and local template validation, build and install the template pack from this repository:
+Create a new FastSharp API with the published template:
 
 ```bash
-dotnet pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o ./artifacts
-dotnet new install ./artifacts/FastSharp.Templates.1.0.0-beta.13.nupkg
+dotnet new install FastSharp.Templates
 dotnet new fastsharp-api -n MyApi --Database InMemory --EnableSwagger true
 cd MyApi
 dotnet run
 ```
 
-`FastSharp.Templates` is not yet published as a public NuGet template pack. The local `fastsharp-api` template scaffolds an EF Core-backed example with generated CRUD, custom `IEndpoint` implementations, validation, and a selectable provider (`InMemory`, `SqlServer`, `Postgres`, or `MySql`). FastSharp itself keeps CRUD optional.
+The `fastsharp-api` template scaffolds an EF Core-backed example with generated CRUD, custom `IEndpoint` implementations, validation, and a selectable provider (`InMemory`, `SqlServer`, `Postgres`, or `MySql`). FastSharp itself keeps CRUD optional.
 
 Or add FastSharp to an existing Minimal API project:
 
 ```bash
 dotnet add package FastSharp.Modules
-dotnet add package FastSharp.Models
 ```
 
-> `FastSharp.Modules` is the core. `FastSharp.Models` contains only the model interfaces — add it to projects that don't need the full core.
+`FastSharp.Modules` is the core package and brings `FastSharp.Models` transitively. Add `FastSharp.Models` directly only when a project needs shared abstractions such as `IModel<TKey>` or `PagedResult<T>` without the module and endpoint framework.
 
 ⚠️ FastSharp is currently in **beta**. APIs may change between versions.
 ---
 
-## Claude Code Skill
+## Agent Skill
 
-FastSharp includes a Claude Code skill for scaffolding common module work while keeping project conventions visible.
+FastSharp includes an agent skill for scaffolding common module work while keeping project conventions visible.
 
 Install it from this repository with the Skills CLI:
 
@@ -93,7 +91,6 @@ The minimum setup is **four code files** (steps 2–5 below) plus package restor
 **1. Install the dependencies**
 ```bash
 dotnet add package FastSharp.Modules
-dotnet add package FastSharp.Models
 dotnet add package Microsoft.EntityFrameworkCore.InMemory
 ```
 
@@ -165,7 +162,7 @@ public class ProductsModule : Module<ApiDbContext>
         });
 
         // Declare custom endpoints for this module (implemented via IEndpoint)
-        //Include<CheckProductStock>();
+        Include<CheckProductStock>();
     }
 }
 

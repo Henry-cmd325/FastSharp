@@ -53,6 +53,7 @@ _ReSharper*/
 coverage*/
 *.coverage
 *.coveragexml
+**/TestResults/
 
 # Publish outputs
 artifacts/

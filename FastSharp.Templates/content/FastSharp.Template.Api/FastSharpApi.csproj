@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FastSharp.Modules" Version="1.0.0-beta.13" />
+    <PackageReference Include="FastSharp.Modules" Version="__FASTSHARP_MODULES_VERSION__" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.8.0" />
 <!--#if (EnableSwagger)-->

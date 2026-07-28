@@ -13,9 +13,11 @@ This file is written for code agents that need to understand, modify, or extend 
 ## What this repository contains
 
 - `FastSharp.Modules`: core library for modules, endpoint discovery, and generic CRUD mapping
-- `FastSharp.Models`: small abstractions shared by consumers, such as `IModel<TKey>` and `PagedResult<T>`
+- `FastSharp.Models`: small abstractions shared by consumers, such as `IModel<TKey>` and `PagedResult<T>`; included transitively by `FastSharp.Modules` and installed directly only for standalone use
+- `FastSharp.Templates`: published `dotnet new` template pack containing the `fastsharp-api` project template
 - `FastSharp.Tests`: behavior tests for endpoint discovery and CRUD mapping
 - `Samples/QuickStart`: runnable sample app using an in-memory EF Core database
+- `skills/fastsharp`: agent-neutral scaffolding skill for modules, optional CRUD, custom endpoints, and validation
 
 ## Primary goals of the project
 
@@ -137,7 +139,7 @@ Example from tests:
 ### If you need to scaffold modules, CRUD, endpoints, or validation
 
 - `skills/fastsharp/SKILL.md`
-  - repo-local Claude Code skill for convention-aware FastSharp scaffolding (`/fastsharp module|crud|endpoint|validation`); installable by consumers via `npx skills add Henry-cmd325/FastSharp`
+  - agent-neutral skill for convention-aware FastSharp scaffolding (`/fastsharp module|crud|endpoint|validation`); installable by consumers via `npx skills add Henry-cmd325/FastSharp`
 
 ### If you need expected behavior before editing core logic
 
