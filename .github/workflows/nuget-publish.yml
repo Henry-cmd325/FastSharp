@@ -41,6 +41,16 @@ jobs:
           dotnet pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
           dotnet pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o ./artifacts --no-build /p:Version=$VERSION
 
+      - name: Validate packed template dependency
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          TEMPLATE_PROJECT=content/content/FastSharp.Template.Api/FastSharpApi.csproj
+          TEMPLATE_PACKAGE=./artifacts/FastSharp.Templates.$VERSION.nupkg
+          if [ ! -f "$TEMPLATE_PACKAGE" ]; then echo "::error::Missing packed template package: $TEMPLATE_PACKAGE"; exit 1; fi
+          if ! unzip -Z1 "$TEMPLATE_PACKAGE" | rg -Fx "$TEMPLATE_PROJECT" > /dev/null; then echo "::error::Missing embedded template project: $TEMPLATE_PROJECT"; exit 1; fi
+          if unzip -p "$TEMPLATE_PACKAGE" "$TEMPLATE_PROJECT" | rg -F "__FASTSHARP_MODULES_VERSION__" > /dev/null; then echo "::error::Unresolved FastSharp.Modules version token in packed template."; exit 1; fi
+          if ! unzip -p "$TEMPLATE_PACKAGE" "$TEMPLATE_PROJECT" | rg -F "<PackageReference Include=\"FastSharp.Modules\" Version=\"$VERSION\" />" > /dev/null; then echo "::error::Packed FastSharp.Modules version does not match $VERSION."; exit 1; fi
+
       - name: NuGet login
         uses: NuGet/login@v1
         id: login
@@ -48,4 +58,8 @@ jobs:
          user: ${{ secrets.NUGET_USERNAME }}
 
       - name: Publish to NuGet
-        run: dotnet nuget push "./artifacts/*.nupkg" --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          dotnet nuget push "./artifacts/FastSharp.Models.$VERSION.nupkg" --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push "./artifacts/FastSharp.Modules.$VERSION.nupkg" --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push "./artifacts/FastSharp.Templates.$VERSION.nupkg" --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate

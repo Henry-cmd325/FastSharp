@@ -13,7 +13,8 @@ public class TemplateTestFixture : IDisposable
     public string DotnetCliHomeDir { get; }
     public string NugetPackagesDir { get; }
     public string RepoRootDir { get; }
-    public string Version { get; } = $"1.0.0-test-{Guid.NewGuid():N}";
+    public string Version { get; } = "1.0.0-test-source";
+    public string PackageVersion { get; } = "1.0.0-test-package";
     public IReadOnlyDictionary<string, string> EnvironmentVariables { get; }
 
     public TemplateTestFixture()
@@ -39,20 +40,15 @@ public class TemplateTestFixture : IDisposable
         CopyPackSources();
 
         // Pack private source copies so tests never modify tracked files or shared build output.
-        RunCommand("dotnet", $"pack FastSharp.Models/FastSharp.Models.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", TempSourceDir, EnvironmentVariables);
-        RunCommand("dotnet", $"pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", TempSourceDir, EnvironmentVariables);
+        var versionProperties = $"/p:Version={Version} /p:PackageVersion={PackageVersion}";
+        RunCommand("dotnet", $"pack FastSharp.Models/FastSharp.Models.csproj -c Release -o \"{TempArtifactsDir}\" {versionProperties}", TempSourceDir, EnvironmentVariables);
+        RunCommand("dotnet", $"pack FastSharp.Modules/FastSharp.Modules.csproj -c Release -o \"{TempArtifactsDir}\" {versionProperties}", TempSourceDir, EnvironmentVariables);
 
-        // Rewrite only the copied template content before packing it.
-        var templateCsprojPath = Path.Combine(TempSourceDir, "FastSharp.Templates", "content", "FastSharp.Template.Api", "FastSharpApi.csproj");
-        var originalCsprojContent = File.ReadAllText(templateCsprojPath);
-        var testCsprojContent = originalCsprojContent.Replace("1.0.0-beta.13", Version);
-        File.WriteAllText(templateCsprojPath, testCsprojContent);
-
-        RunCommand("dotnet", $"pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o \"{TempArtifactsDir}\" /p:Version={Version}", TempSourceDir, EnvironmentVariables);
-        VerifyPackedModuleUsesLocalModelVersion();
+        RunCommand("dotnet", $"pack FastSharp.Templates/FastSharp.Templates.csproj -c Release -o \"{TempArtifactsDir}\" {versionProperties}", TempSourceDir, EnvironmentVariables);
+        VerifyPackedPackageVersions();
 
         // The fixture-specific DOTNET_CLI_HOME isolates template installation from other tests and users.
-        var templateNupkg = Path.Combine(TempArtifactsDir, $"FastSharp.Templates.{Version}.nupkg");
+        var templateNupkg = Path.Combine(TempArtifactsDir, $"FastSharp.Templates.{PackageVersion}.nupkg");
         RunCommand("dotnet", $"new install \"{templateNupkg}\"", TempSourceDir, EnvironmentVariables);
     }
 
@@ -92,19 +88,47 @@ public class TemplateTestFixture : IDisposable
         }
     }
 
-    private void VerifyPackedModuleUsesLocalModelVersion()
+    private void VerifyPackedPackageVersions()
     {
-        var packagePath = Path.Combine(TempArtifactsDir, $"FastSharp.Modules.{Version}.nupkg");
-        using var package = ZipFile.OpenRead(packagePath);
-        var nuspec = package.GetEntry("FastSharp.Modules.nuspec")
+        var modulesPackagePath = Path.Combine(TempArtifactsDir, $"FastSharp.Modules.{PackageVersion}.nupkg");
+        using var modulesPackage = ZipFile.OpenRead(modulesPackagePath);
+        var nuspec = modulesPackage.GetEntry("FastSharp.Modules.nuspec")
             ?? throw new InvalidOperationException("The packed FastSharp.Modules nuspec is missing.");
         using var reader = new StreamReader(nuspec.Open());
         var nuspecContent = reader.ReadToEnd();
 
         if (!nuspecContent.Contains("FastSharp.Models", StringComparison.Ordinal) ||
-            !nuspecContent.Contains(Version, StringComparison.Ordinal))
+            !nuspecContent.Contains(PackageVersion, StringComparison.Ordinal))
         {
             throw new InvalidOperationException("The packed FastSharp.Modules package does not depend on the fixture's FastSharp.Models version.");
+        }
+
+        var templatesPackagePath = Path.Combine(TempArtifactsDir, $"FastSharp.Templates.{PackageVersion}.nupkg");
+        var sourceVersionPackagePath = Path.Combine(TempArtifactsDir, $"FastSharp.Templates.{Version}.nupkg");
+        if (!File.Exists(templatesPackagePath) || File.Exists(sourceVersionPackagePath))
+        {
+            throw new InvalidOperationException("The packed template package does not use the fixture's PackageVersion.");
+        }
+
+        using var templatesPackage = ZipFile.OpenRead(templatesPackagePath);
+        var templateNuspec = templatesPackage.GetEntry("FastSharp.Templates.nuspec")
+            ?? throw new InvalidOperationException("The packed template nuspec is missing.");
+        using var templateNuspecReader = new StreamReader(templateNuspec.Open());
+        var templateNuspecContent = templateNuspecReader.ReadToEnd();
+        if (!templateNuspecContent.Contains($"<version>{PackageVersion}</version>", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The packed template nuspec does not use the fixture's PackageVersion.");
+        }
+
+        var templateProject = templatesPackage.GetEntry("content/content/FastSharp.Template.Api/FastSharpApi.csproj")
+            ?? throw new InvalidOperationException("The packed template project is missing.");
+        using var templateReader = new StreamReader(templateProject.Open());
+        var templateProjectContent = templateReader.ReadToEnd();
+
+        if (!templateProjectContent.Contains($"<PackageReference Include=\"FastSharp.Modules\" Version=\"{PackageVersion}\" />", StringComparison.Ordinal) ||
+            templateProjectContent.Contains("__FASTSHARP_MODULES_VERSION__", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The packed template does not contain the fixture's FastSharp.Modules version.");
         }
     }
 
@@ -231,7 +255,7 @@ public class TemplateScaffoldingTests : IClassFixture<TemplateTestFixture>
 
             var assetsFile = Path.Combine(testOutputDir, "obj", "project.assets.json");
             var assetsContent = File.ReadAllText(assetsFile);
-            Assert.Contains($"FastSharp.Modules/{_fixture.Version}", assetsContent, StringComparison.Ordinal);
+            Assert.Contains($"FastSharp.Modules/{_fixture.PackageVersion}", assetsContent, StringComparison.Ordinal);
         }
         finally
         {

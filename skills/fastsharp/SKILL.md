@@ -3,7 +3,7 @@ name: fastsharp
 description: "Trigger: /fastsharp module, /fastsharp crud, /fastsharp endpoint, /fastsharp validation. Scaffold FastSharp code using project conventions."
 license: Apache-2.0
 metadata:
-  author: gentleman-programming
+  author: Henry-cmd325
   version: "1.0"
 ---
 ## Activation Contract

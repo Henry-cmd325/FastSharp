@@ -15,10 +15,29 @@
     <ContentTargetFolders>content</ContentTargetFolders>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <_TemplateContentDirectory>$(BaseIntermediateOutputPath)template-content</_TemplateContentDirectory>
+    <_FastSharpModulesVersion Condition="'$(PackageVersion)' != ''">$(PackageVersion)</_FastSharpModulesVersion>
+    <_FastSharpModulesVersion Condition="'$(_FastSharpModulesVersion)' == ''">$(Version)</_FastSharpModulesVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="content\**\*" Exclude="content\**\bin\**;content\**\obj\**" />
   </ItemGroup>
+
+  <Target Name="StageTemplateContent" BeforeTargets="_GetPackageFiles">
+    <RemoveDir Directories="$(_TemplateContentDirectory)" />
+    <Copy SourceFiles="@(Content)"
+          DestinationFiles="@(Content->'$(_TemplateContentDirectory)\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <XmlPoke XmlInputPath="$(_TemplateContentDirectory)\FastSharp.Template.Api\FastSharpApi.csproj"
+             Query="/Project/ItemGroup/PackageReference[@Include='FastSharp.Modules']/@Version"
+             Value="$(_FastSharpModulesVersion)" />
+    <ItemGroup>
+      <Content Remove="@(Content)" />
+      <Content Include="$(_TemplateContentDirectory)\**\*">
+        <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+        <PackagePath>content\content\%(Link)</PackagePath>
+      </Content>
+    </ItemGroup>
+  </Target>
 
 </Project>
