@@ -46,10 +46,59 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           TEMPLATE_PROJECT=content/content/FastSharp.Template.Api/FastSharpApi.csproj
           TEMPLATE_PACKAGE=./artifacts/FastSharp.Templates.$VERSION.nupkg
-          if [ ! -f "$TEMPLATE_PACKAGE" ]; then echo "::error::Missing packed template package: $TEMPLATE_PACKAGE"; exit 1; fi
-          if ! unzip -Z1 "$TEMPLATE_PACKAGE" | rg -Fx "$TEMPLATE_PROJECT" > /dev/null; then echo "::error::Missing embedded template project: $TEMPLATE_PROJECT"; exit 1; fi
-          if unzip -p "$TEMPLATE_PACKAGE" "$TEMPLATE_PROJECT" | rg -F "__FASTSHARP_MODULES_VERSION__" > /dev/null; then echo "::error::Unresolved FastSharp.Modules version token in packed template."; exit 1; fi
-          if ! unzip -p "$TEMPLATE_PACKAGE" "$TEMPLATE_PROJECT" | rg -F "<PackageReference Include=\"FastSharp.Modules\" Version=\"$VERSION\" />" > /dev/null; then echo "::error::Packed FastSharp.Modules version does not match $VERSION."; exit 1; fi
+          TEMPLATE_PACKAGE="$TEMPLATE_PACKAGE" TEMPLATE_PROJECT="$TEMPLATE_PROJECT" VERSION="$VERSION" python3 - <<'PY'
+          import os
+          import sys
+          import zipfile
+          import xml.etree.ElementTree as ElementTree
+
+          package_path = os.environ["TEMPLATE_PACKAGE"]
+          project_path = os.environ["TEMPLATE_PROJECT"]
+          version = os.environ["VERSION"]
+
+          def fail(message):
+              print(f"::error::{message}")
+              sys.exit(1)
+
+          if not os.path.isfile(package_path):
+              fail(f"Missing packed template package: {package_path}")
+
+          try:
+              with zipfile.ZipFile(package_path) as package:
+                  if project_path not in package.namelist():
+                      fail(f"Missing embedded template project '{project_path}' in '{package_path}'.")
+                  project_contents = package.read(project_path)
+          except zipfile.BadZipFile:
+              fail(f"Packed template package is not a valid NuGet archive: {package_path}")
+          except OSError as error:
+              fail(f"Could not read packed template package '{package_path}': {error}")
+
+          if b"__FASTSHARP_MODULES_VERSION__" in project_contents:
+              fail(f"Unresolved FastSharp.Modules version token in '{project_path}'.")
+
+          try:
+              project = ElementTree.fromstring(project_contents)
+          except ElementTree.ParseError as error:
+              fail(f"Embedded template project '{project_path}' is not valid XML: {error}")
+
+          modules_references = [
+              reference for reference in project.iter()
+              if reference.tag.rsplit("}", 1)[-1] == "PackageReference"
+              and reference.get("Include") == "FastSharp.Modules"
+          ]
+          if len(modules_references) != 1:
+              fail(
+                  f"Expected exactly one FastSharp.Modules PackageReference in '{project_path}', "
+                  f"found {len(modules_references)}."
+              )
+
+          package_version = modules_references[0].get("Version")
+          if package_version != version:
+              fail(
+                  f"FastSharp.Modules PackageReference version in '{project_path}' is "
+                  f"'{package_version}', expected tag-derived version '{version}'."
+              )
+          PY
 
       - name: NuGet login
         uses: NuGet/login@v1
